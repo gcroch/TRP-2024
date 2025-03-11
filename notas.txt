@@ -1,4 +1,0 @@
-usuarios, puntaje, preguntas, respuestas, imagenes usuarios, 
-imagenes preguntas, unidades y orden de unidades,
-
-respuestas pueden ser opciones (elegir una o mas de una), a explayar.
