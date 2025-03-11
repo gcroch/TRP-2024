@@ -1,3 +1,5 @@
+## Front-end
+
 Para ejecutar el front del proyecto, lo que debemos hacer es lo siguiente:
 
 Clonamos el proyecto
@@ -20,7 +22,7 @@ y finalmente ejecutamos el front con
 y nos con esto en marcha nos podemos dirigir a localhost:3000 y observar el front andando
 
 
-Back-end (API con Flask)
+## Back-end (API con Flask)
 
 Para ejecutar la API de Flask, sigue estos pasos:
 
