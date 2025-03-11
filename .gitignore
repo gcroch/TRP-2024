@@ -1,5 +1,15 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Ignorar entornos virtuales
+back/venv/
+back/env/
+.venv/
+
+# Ignorar archivos y carpetas generados por Python
+back/__pycache__/
+back/*.py[cod]
+back/*$py.class
+
 # dependencies
 /front/node_modules
 /.pnp
