@@ -32,9 +32,17 @@ def register():
         "role": "user" 
     })
 
-    msg = Message("Tu contraseña de registro", recipients=[email])
-    msg.body = f"Hola {name},\n\nTu contraseña para iniciar sesión es: {password}\n\n¡Saludos!"
-
+    msg = Message("Credenciales para el taller de resolución de problemas", recipients=[email])
+    text_body = f"Hola {name},\n\nTu DNI para iniciar sesión es: {username}\n\nTu contraseña para iniciar sesión es: {password}\n\n¡Saludos!"
+    html_body = f"""
+    <p>Hola {name},</p>
+    <p>Tu DNI para iniciar sesión es: <strong>{username}</strong></p>
+    <p>Tu contraseña para iniciar sesión es: <strong>{password}</strong></p>
+    <p>¡Saludos!</p>
+    <p><u>Atte</u>: <u>Taller</u> <u>de</u> <u>resolución</u> <u>de</u> <u>problemas</u> <u>UNLu</u></p>
+    """
+    msg.body = text_body
+    msg.html = html_body
     current_app.extensions['mail'].send(msg)
 
     return jsonify({"message": "Usuario registrado exitosamente. Se ha enviado un correo con la contraseña."}), 201
