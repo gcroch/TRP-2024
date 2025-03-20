@@ -2,5 +2,8 @@ import secrets
 import string
 
 def generate_random_password(length=12):
-    characters = string.ascii_letters + string.digits + string.punctuation
-    return ''.join(secrets.choice(characters) for _ in range(length))
+    # Definir el conjunto de caracteres permitidos: letras y dígitos
+    characters = string.ascii_letters + string.digits
+    # Generar una contraseña aleatoria utilizando el conjunto definido
+    password = ''.join(secrets.choice(characters) for _ in range(length))
+    return password
