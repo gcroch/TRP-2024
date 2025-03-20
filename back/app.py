@@ -25,8 +25,12 @@ jwt = JWTManager(app)
 mail = Mail(app)
 
 # Registrar el blueprint de endpoints de usuarios
-from endpoints.endpointsUsers import users_bp
+from endpoints.epUsers import users_bp
 app.register_blueprint(users_bp)
+
+# Registrar el blueprint de endpoints de las unidades
+from endpoints.epUnits import units_bp
+app.register_blueprint(units_bp)
 
 @app.route('/', methods=['GET'])
 def home():
