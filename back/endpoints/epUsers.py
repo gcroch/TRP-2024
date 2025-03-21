@@ -77,3 +77,35 @@ def profile():
         }
         return jsonify(user_data), 200
     return jsonify({"error": "Usuario no encontrado"}), 404
+
+@users_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    # Obtener la identidad (DNI) del usuario logueado desde el token JWT
+    current_dni = get_jwt_identity()
+    
+    # Recoger los datos enviados en el request
+    data = request.get_json()
+    update_fields = {}
+
+    # Solo se actualizan los campos que se envíen en el request
+    if "name" in data:
+        update_fields["name"] = data["name"]
+    if "lastname" in data:
+        update_fields["lastname"] = data["lastname"]
+    if "password" in data:
+        # Si se envía una nueva contraseña, la hasheamos antes de actualizar
+        update_fields["password"] = generate_password_hash(data["password"])
+    
+    if not update_fields:
+        return jsonify({"error": "No se han enviado campos para actualizar"}), 400
+
+    result = mongo.db.users.update_one(
+        {"DNI": current_dni},
+        {"$set": update_fields}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    return jsonify({"message": "Usuario actualizado exitosamente"}), 200
