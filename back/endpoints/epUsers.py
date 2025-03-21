@@ -7,6 +7,26 @@ from flask_mail import Mail, Message
 
 users_bp = Blueprint('users', __name__)
 
+
+@users_bp.route('/users', methods=['GET'])
+#@jwt_required()
+def get_all_users():
+    """
+    Lista todos los usuarios.
+    Se requiere autenticación (JWT).
+    Se excluye la contraseña de la salida.
+    """
+    users_cursor = mongo.db.users.find()
+    users = []
+    for user in users_cursor:
+        # Excluir el campo 'password'
+        user.pop("password", None)
+        # Convertir _id a cadena (si lo deseas)
+        if "_id" in user:
+            user["_id"] = str(user["_id"])
+        users.append(user)
+    return jsonify(users), 200
+
 @users_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
