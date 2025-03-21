@@ -4,6 +4,7 @@
 back/venv/
 back/env/
 .venv/
+back/endpoints/__pycache__
 
 # Ignorar archivos y carpetas generados por Python
 back/__pycache__/

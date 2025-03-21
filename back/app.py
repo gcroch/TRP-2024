@@ -32,6 +32,10 @@ app.register_blueprint(users_bp)
 from endpoints.epUnits import units_bp
 app.register_blueprint(units_bp)
 
+# Registrar el blueprint de endpoints de las preguntas
+from endpoints.epQuestions import questions_bp
+app.register_blueprint(questions_bp)
+
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({"message": "¡Hola desde la API Flask!"})
