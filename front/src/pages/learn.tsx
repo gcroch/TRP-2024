@@ -35,6 +35,8 @@ import { LoginScreen, useLoginScreen } from "~/components/LoginScreen";
 import { useBoundStore } from "~/hooks/useBoundStore";
 import type { Tile, TileType, Unit } from "~/utils/units";
 import { units } from "~/utils/units";
+import { withAuth } from "~/components/withAuth";
+
 
 type TileStatus = "LOCKED" | "ACTIVE" | "COMPLETE";
 
@@ -546,7 +548,7 @@ const Learn: NextPage = () => {
   );
 };
 
-export default Learn;
+export default withAuth(Learn);
 
 const LessonCompletionSvg = ({
   lessonsCompleted,

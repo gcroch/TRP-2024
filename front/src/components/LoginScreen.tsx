@@ -70,11 +70,11 @@ export const LoginScreen = ({
       }
 
       const data = await response.json();
-      const jwt = data.jwt;
+      const jwt = data.access_token;
       console.log("JWT recibido:", jwt);
 
       // Guardamos el token (por ejemplo, en localStorage)
-      localStorage.setItem("token", jwt);
+      localStorage.setItem("access_token", jwt);
 
       // Opcional: si estás en signup, puedes usar el input de nombre para configurar el usuario
       const name =
