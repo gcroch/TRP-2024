@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask_jwt_extended import JWTManager
 from extensions import mongo 
 from flask_mail import Mail
+from flask_cors import CORS
 
 # Cargar variables de entorno (.env ubicado en la raíz del proyecto)
 load_dotenv(os.path.join(os.path.dirname(__file__),"..", '.env'))
@@ -11,6 +12,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__),"..", '.env'))
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 app.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY")
+CORS(app)
 
 # Configuración de correo (ajusta según tu servidor SMTP)
 app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")

@@ -34,8 +34,11 @@ export const LoginScreen = ({
   const setUsername = useBoundStore((x) => x.setUsername);
   const setName = useBoundStore((x) => x.setName);
 
-  const [ageTooltipShown, setAgeTooltipShown] = useState(false);
+  // Agregamos estados para capturar DNI y contraseña
+  const [dni, setDni] = useState("");
+  const [password, setPassword] = useState("");
 
+  const [ageTooltipShown, setAgeTooltipShown] = useState(false);
   const nameInputRef = useRef<null | HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,14 +47,48 @@ export const LoginScreen = ({
     }
   }, [loginScreenState, loggedIn, setLoginScreenState]);
 
-  const logInAndSetUserProperties = () => {
-    const name =
-      nameInputRef.current?.value.trim() || Math.random().toString().slice(2);
-    const username = name.replace(/ +/g, "-");
-    setUsername(username);
-    setName(name);
-    logIn();
-    void router.push("/learn");
+  const logInAndSetUserProperties = async () => {
+    try {
+      // Realizamos la petición POST al endpoint /login
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            DNI: dni,
+            password: password,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Error en el login:", await response.text());
+        return;
+      }
+
+      const data = await response.json();
+      const jwt = data.jwt;
+      console.log("JWT recibido:", jwt);
+
+      // Guardamos el token (por ejemplo, en localStorage)
+      localStorage.setItem("token", jwt);
+
+      // Opcional: si estás en signup, puedes usar el input de nombre para configurar el usuario
+      const name =
+        nameInputRef.current?.value.trim() || Math.random().toString().slice(2);
+      const username = name.replace(/ +/g, "-");
+      setUsername(username);
+      setName(name);
+      logIn();
+
+      // Redirigimos al usuario a la siguiente página
+      router.push("/learn");
+    } catch (error) {
+      console.error("Error durante el fetch de login:", error);
+    }
   };
 
   return (
@@ -72,7 +109,6 @@ export const LoginScreen = ({
           <CloseSvg />
           <span className="sr-only">Close</span>
         </button>
-        
       </header>
       <div className="flex grow items-center justify-center">
         <div className="flex w-full flex-col gap-5 sm:w-96">
@@ -122,19 +158,18 @@ export const LoginScreen = ({
             )}
             <input
               className="grow rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-3"
-              placeholder={
-                loginScreenState === "LOGIN"
-                  ? "DNI"
-                  : "DNI"
-              }
+              placeholder="DNI"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
             />
             <div className="relative flex grow">
               <input
                 className="grow rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-3"
                 placeholder="Contraseña"
                 type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
-              
             </div>
           </div>
           <button
@@ -152,7 +187,9 @@ export const LoginScreen = ({
             <button
               className="text-sm font-bold uppercase text-blue-400"
               onClick={() =>
-                setLoginScreenState((x) => (x === "LOGIN" ? "SIGNUP" : "LOGIN"))
+                setLoginScreenState((x) =>
+                  x === "LOGIN" ? "SIGNUP" : "LOGIN"
+                )
               }
             >
               {loginScreenState === "LOGIN" ? "sign up" : "log in"}

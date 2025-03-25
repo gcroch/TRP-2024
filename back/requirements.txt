@@ -9,3 +9,4 @@ Flask-PyMongo==3.0.1
 python-dotenv==1.0.1
 flask_jwt_extended==4.7.1
 Flask-Mail==0.10.0
+flask-cors==5.0.1
