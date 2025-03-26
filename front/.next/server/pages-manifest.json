@@ -2,9 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/learn": "pages/learn.js",
-  "/settings/coach": "pages/settings/coach.js",
-  "/": "pages/index.js",
   "/profile": "pages/profile.js",
-  "/settings/account": "pages/settings/account.js"
+  "/settings/account": "pages/settings/account.js",
+  "/learn": "pages/learn.js"
 }
