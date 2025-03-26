@@ -18,6 +18,8 @@ import {
 import womanPng from "../../public/woman.png";
 import { useBoundStore } from "~/hooks/useBoundStore";
 import { useRouter } from "next/router";
+import { withAuth } from "~/components/withAuth";
+
 
 const lessonProblem1 = {
   type: "SELECT_1_OF_3",
@@ -223,7 +225,8 @@ const Lesson: NextPage = () => {
   }
 };
 
-export default Lesson;
+export default withAuth(Lesson);
+
 
 const ProgressBar = ({
   correctAnswerCount,
