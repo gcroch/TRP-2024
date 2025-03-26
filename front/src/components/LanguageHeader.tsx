@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { LanguageDropDown } from "./LanguageDropDown";
 
 export const LanguageHeader = () => {
   return (

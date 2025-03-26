@@ -29,10 +29,15 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/learn.js"
     ],
-    "/lesson": [
+    "/profile": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/lesson.js"
+      "static/chunks/pages/profile.js"
+    ],
+    "/settings/account": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/settings/account.js"
     ]
   },
   "ampFirstPages": []
