@@ -7,7 +7,6 @@ export const LanguageHeader = () => {
       <Link className="text-4xl" href="/">
         UNLu
       </Link>
-      <LanguageDropDown />
     </header>
   );
 };

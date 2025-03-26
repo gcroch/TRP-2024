@@ -35,7 +35,6 @@ const Home: NextPage = () => {
           </div>
         </div>
       </div>
-      <LanguageCarousel />
       <LoginScreen
         loginScreenState={loginScreenState}
         setLoginScreenState={setLoginScreenState}
