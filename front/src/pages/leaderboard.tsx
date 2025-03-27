@@ -12,7 +12,8 @@ import {
 } from "~/components/Svgs";
 import { useRouter } from "next/router";
 import { useLeaderboardUsers } from "~/hooks/useLeaderboard";
-import Image from "next/image";
+import { withAuth } from "~/components/withAuth";
+
 
 const LeaderboardExplanationSection = () => {
   return (
@@ -148,4 +149,4 @@ const Leaderboard: NextPage = () => {
   );
 };
 
-export default Leaderboard;
+export default withAuth(Leaderboard);

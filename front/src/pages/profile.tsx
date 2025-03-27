@@ -2,18 +2,16 @@ import type { NextPage } from "next";
 import { BottomBar } from "~/components/BottomBar";
 import { LeftBar } from "~/components/LeftBar";
 import {
-  EditPencilSvg,
   EmptyFireSvg,
   FireSvg,
   LightningProgressSvg,
   ProfileTimeJoinedSvg,
-  SettingsGearSvg,
 } from "~/components/Svgs";
-import Link from "next/link";
-import { Flag } from "~/components/Flag";
 import { useBoundStore } from "~/hooks/useBoundStore";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { withAuth } from "~/components/withAuth";
+
 
 const Profile: NextPage = () => {
   return (
@@ -32,7 +30,7 @@ const Profile: NextPage = () => {
   );
 };
 
-export default Profile;
+export default withAuth(Profile);
 
 const ProfileTopBar = () => {
   return (
