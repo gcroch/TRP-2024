@@ -91,12 +91,7 @@ export const TopBar = ({
               case "MORE":
                 return (
                   <div className="flex grow flex-col">
-                    <Link
-                      className="px-5 py-2 text-left uppercase hover:bg-gray-100 rounded-2xl p-4 font-bold hover:bg-gray-300 font-bold text-gray-400"
-                      href={loggedIn ? "/settings/account" : "/settings/sound"}
-                    >
-                      Configuraciónes
-                    </Link>
+                    
                     {loggedIn && (
                       <button
                         className="px-5 py-2 text-left uppercase hover:bg-gray-100 rounded-2xl p-4 font-bold hover:bg-gray-300 font-bold text-gray-400"

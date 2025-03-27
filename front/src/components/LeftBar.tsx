@@ -87,12 +87,7 @@ export const LeftBar = ({ selectedTab }: { selectedTab: Tab | null }) => {
              
               <div className="flex flex-col border-t-2 border-gray-300 py-2">
                 
-                <Link
-                  className="px-5 py-2 text-left uppercase hover:bg-gray-100"
-                  href={loggedIn ? "/settings/account" : "/settings/sound"}
-                >
-                  Configuraciónes
-                </Link>
+                
                 
                 {!loggedIn && (
                   <button
