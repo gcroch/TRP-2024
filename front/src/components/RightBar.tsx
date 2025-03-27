@@ -3,21 +3,13 @@ import type { ComponentProps } from "react";
 import React, { useState } from "react";
 import dayjs from "dayjs";
 import {
-  BronzeLeagueSvg,
   EmptyFireSvg,
-  EmptyGemSvg,
-  FireSvg,
-  GemSvg,
-  LightningProgressSvg,
-  LingotsTreasureChestSvg,
-  TreasureProgressSvg,
+  FireSvg
 } from "./Svgs";
 import { Calendar } from "./Calendar";
 import { useBoundStore } from "~/hooks/useBoundStore";
-import { Flag } from "./Flag";
 import type { LoginScreenState } from "./LoginScreen";
 import { LoginScreen } from "./LoginScreen";
-import { useLeaderboardRank } from "~/hooks/useLeaderboard";
 
 export const RightBar = () => {
   const streak = useBoundStore((x) => x.streak);
@@ -28,7 +20,7 @@ export const RightBar = () => {
 
   return (
     <>
-      <aside className="sticky top-0 hidden w-96 flex-col gap-6 self-start sm:flex">
+      <aside className="sticky top-0 hidden flex-col gap-6 self-start sm:flex">
         <article className="my-6 flex justify-between gap-4">
           <span
             className="relative flex items-center gap-2 rounded-xl p-3 font-bold text-orange-500 hover:bg-gray-100"
@@ -54,8 +46,7 @@ export const RightBar = () => {
             <div
               className="absolute top-full z-10 flex flex-col gap-5 rounded-2xl border-2 border-gray-300 bg-white p-5 text-black"
               style={{
-                left: "calc(50% - 200px)",
-                width: 400,
+                left: "-330%",
                 display: streakShown ? "flex" : "none",
               }}
             >
