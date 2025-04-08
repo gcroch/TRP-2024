@@ -33,7 +33,7 @@ export const LoginScreen = ({
   const setUsername = useBoundStore((x) => x.setUsername);
   const setName = useBoundStore((x) => x.setName);
 
-  // Agregamos estados para capturar DNI y contraseña
+  // Estados para DNI y contraseña
   const [dni, setDni] = useState("");
   const [password, setPassword] = useState("");
 
@@ -72,18 +72,20 @@ export const LoginScreen = ({
       const jwt = data.access_token;
       console.log("JWT recibido:", jwt);
 
-      // Guardamos el token (por ejemplo, en localStorage)
-      localStorage.setItem("access_token", jwt);
+      // Guardamos el token en localStorage
+      localStorage.setItem("token", jwt);
 
-      // Opcional: si estás en signup, puedes usar el input de nombre para configurar el usuario
+      // Opcional: si estas en signup, usa el input de nombre para configurar el usuario.
       const name =
         nameInputRef.current?.value.trim() || Math.random().toString().slice(2);
       const username = name.replace(/ +/g, "-");
       setUsername(username);
       setName(name);
+      
+      // Actualizamos el estado de logueo
       logIn();
 
-      // Redirigimos al usuario a la siguiente página
+      // Redirigimos al usuario a la siguiente página (por ejemplo, "learn")
       router.push("/learn");
     } catch (error) {
       console.error("Error durante el fetch de login:", error);
@@ -112,7 +114,7 @@ export const LoginScreen = ({
       <div className="flex grow items-center justify-center">
         <div className="flex w-full flex-col gap-5 sm:w-96">
           <h2 className="text-center text-2xl font-bold text-gray-800">
-            {loginScreenState === "LOGIN" ? "Iniciar sesion" : "Iniciar sesion"}
+            {loginScreenState === "LOGIN" ? "Iniciar sesión" : "Iniciar sesión"}
           </h2>
           <div className="flex flex-col gap-2 text-black">
             <input
@@ -137,8 +139,7 @@ export const LoginScreen = ({
           >
             {loginScreenState === "LOGIN" ? "Aceptar" : "Aceptar"}
           </button>
-          <p className="block text-center sm:hidden">
-          </p>
+          <p className="block text-center sm:hidden"></p>
         </div>
       </div>
     </article>

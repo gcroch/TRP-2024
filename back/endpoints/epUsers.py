@@ -85,19 +85,33 @@ def login():
 @jwt_required()
 def profile():
     current_username = get_jwt_identity()
-    
     user = mongo.db.users.find_one({"DNI": current_username})
     if user:
+        totalExp = 0
+        # Se buscan todas las respuestas del usuario
+        answers = mongo.db.answers.find({"user_id": user["_id"]})
+        for answer in answers:
+            # Se obtiene la pregunta correspondiente usando el question_id de la respuesta
+            question = mongo.db.questions.find_one({"_id": answer["question_id"]})
+            if question:
+                try:
+                    # Convertir selectedOption a índice (asumiendo que comienza en 1)
+                    idx = int(answer["selectedOption"]) - 1
+                    # Verificar que el índice exista en la lista de opciones y que la opción sea correcta
+                    if idx < len(question["options"]) and question["options"][idx].get("isCorrect") is True:
+                        totalExp += question.get("exp", 0)
+                except Exception as e:
+                    print("Error procesando la respuesta:", e)
         user_data = {
             "DNI": user.get("DNI"),
             "name": user.get("name"),
             "lastname": user.get("lastname"),
             "email": user.get("email"),
             "role": user.get("role"),
+            "exp": totalExp  # Experiencia acumulada
         }
         return jsonify(user_data), 200
     return jsonify({"error": "Usuario no encontrado"}), 404
-
 @users_bp.route('/profile', methods=['PUT'])
 @jwt_required()
 def update_profile():
@@ -114,8 +128,9 @@ def update_profile():
     if "lastname" in data:
         update_fields["lastname"] = data["lastname"]
     if "password" in data:
-        # Si se envía una nueva contraseña, la hasheamos antes de actualizar
-        update_fields["password"] = generate_password_hash(data["password"])
+        new_password = data["password"]
+        # Hashea la nueva contraseña antes de actualizar
+        update_fields["password"] = generate_password_hash(new_password)
     
     if not update_fields:
         return jsonify({"error": "No se han enviado campos para actualizar"}), 400
@@ -127,5 +142,28 @@ def update_profile():
 
     if result.matched_count == 0:
         return jsonify({"error": "Usuario no encontrado"}), 404
+
+    # Si la contraseña fue actualizada, enviar un correo de notificación
+    if "password" in update_fields:
+        user = mongo.db.users.find_one({"DNI": current_dni})
+        if user:
+            email = user.get("email")
+            name = user.get("name")
+            username = user.get("DNI")  # Suponiendo que el DNI es el username
+            # Configurar y enviar el correo
+            msg = Message(
+                "Cambio de contraseña",
+                recipients=[email]
+            )
+            text_body = f"Hola {name},\n\nSe ha actualizado tu contraseña. La nueva contraseña es: {new_password}\n\n¡Saludos!"
+            html_body = f"""
+            <p>Hola {name},</p>
+            <p>Se ha actualizado tu contraseña. La nueva contraseña es: <strong>{new_password}</strong></p>
+            <p>¡Saludos!</p>
+            <p><u>Atte</u>: <u>Equipo de Soporte</u></p>
+            """
+            msg.body = text_body
+            msg.html = html_body
+            current_app.extensions['mail'].send(msg)
 
     return jsonify({"message": "Usuario actualizado exitosamente"}), 200
