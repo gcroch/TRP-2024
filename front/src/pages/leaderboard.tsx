@@ -34,18 +34,19 @@ const LeaderboardExplanationSection = () => {
   );
 };
 
-type TimeLeftUnit = "days" | "hours" | "minutes";
 
 
 
 const LeaderboardProfile = ({
   place,
   name,
+  lastname,
   xp,
   isCurrentUser,
 }: {
   place: number;
   name: string;
+  lastname: string;
   xp: number;
   isCurrentUser: boolean;
 }) => {
@@ -71,7 +72,7 @@ const LeaderboardProfile = ({
         
       </div>
       <div className="grow overflow-hidden overflow-ellipsis font-bold">
-        {name}
+        {name} {lastname}
       </div>
       <div className="shrink-0 text-gray-500">{`${xp} XP`}</div>
     </div>
@@ -90,12 +91,10 @@ const Leaderboard: NextPage = () => {
     }
   }, [loggedIn, router]);
 
-  const lessonsToUnlockLeaderboard = 1;
+  const lessonsToUnlockLeaderboard = 0;
   const lessonsRemainingToUnlockLeaderboard =
     lessonsToUnlockLeaderboard - lessonsCompleted;
   const leaderboardIsUnlocked = lessonsCompleted >= lessonsToUnlockLeaderboard;
-
-  const leaderboardLeague = "Bronze League";
 
   const leaderboardUsers = useLeaderboardUsers();
 
@@ -133,6 +132,7 @@ const Leaderboard: NextPage = () => {
                       key={user.name}
                       place={i + 1}
                       name={user.name}
+                      lastname={user.lastname}
                       xp={user.xp}
                       isCurrentUser={user.isCurrentUser}
                     />

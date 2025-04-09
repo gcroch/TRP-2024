@@ -9,23 +9,52 @@ users_bp = Blueprint('users', __name__)
 
 
 @users_bp.route('/users', methods=['GET'])
-#@jwt_required()
+#@jwt_required()  # Puedes descomentar si requieres autenticación en este endpoint
 def get_all_users():
     """
-    Lista todos los usuarios.
-    Se requiere autenticación (JWT).
+    Lista todos los usuarios con su experiencia acumulada y retorna los top 10.
     Se excluye la contraseña de la salida.
     """
     users_cursor = mongo.db.users.find()
-    users = []
+    users_list = []
+    
     for user in users_cursor:
-        # Excluir el campo 'password'
+        # Guardamos el _id original para la consulta
+        original_id = user.get("_id")
+        
+        # Calcular la experiencia total acumulada para este usuario
+        totalExp = 0
+        answers = mongo.db.answers.find({"user_id": original_id})
+        for answer in answers:
+            # Obtener la pregunta correspondiente a la respuesta
+            question = mongo.db.questions.find_one({"_id": answer["question_id"]})
+            if question:
+                try:
+                    # Se asume que selectedOption es una cadena numérica y que las opciones comienzan en 1
+                    idx = int(answer["selectedOption"]) - 1
+                    if idx < len(question["options"]) and question["options"][idx].get("isCorrect") is True:
+                        totalExp += question.get("exp", 0)
+                except Exception as e:
+                    print("Error procesando la respuesta:", e)
+        
+        # Agregar el campo de experiencia
+        user["exp"] = totalExp
+        
+        # Excluir la contraseña
         user.pop("password", None)
-        # Convertir _id a cadena (si lo deseas)
+        
+        # Convertir el _id a cadena para serializar
         if "_id" in user:
             user["_id"] = str(user["_id"])
-        users.append(user)
-    return jsonify(users), 200
+        
+        users_list.append(user)
+
+    # Ordenar la lista en orden descendente según la experiencia acumulada
+    users_list_sorted = sorted(users_list, key=lambda x: x.get("exp", 0), reverse=True)
+    
+    # Retornar solo el top 10
+    # top_10 = users_list_sorted[:10]
+    return jsonify(users_list_sorted), 200
 
 @users_bp.route('/register', methods=['POST'])
 def register():
