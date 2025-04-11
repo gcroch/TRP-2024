@@ -4,11 +4,12 @@ import type { BoundStateCreator } from "~/hooks/useBoundStore";
 export type UserSlice = {
   DNI: string;
   name: string;
+  lastname: string;
   username: string;
   joinedAt: dayjs.Dayjs;
+  xpThisWeek: number;
   loggedIn: boolean;
-  setName: (name: string) => void;
-  setUsername: (username: string) => void;
+  setUser: (user: { DNI: string; name: string; lastname: string; username: string; xpThisWeek?: number }) => void;
   logIn: () => void;
   logOut: () => void;
 };
@@ -16,11 +17,20 @@ export type UserSlice = {
 export const createUserSlice: BoundStateCreator<UserSlice> = (set) => ({
   DNI: "",
   name: "",
+  lastname: "",
   username: "",
   joinedAt: dayjs(),
+  xpThisWeek: 0,
   loggedIn: false,
-  setName: (name: string) => set(() => ({ name })),
-  setUsername: (username: string) => set(() => ({ username })),
+
+  setUser: (user) =>
+    set(() => ({
+      DNI: user.DNI,
+      name: user.name,
+      lastname: user.lastname,
+      username: user.username,
+      xpThisWeek: user.xpThisWeek ?? 0,
+    })),
   logIn: () => set(() => ({ loggedIn: true })),
   logOut: () => set(() => ({ loggedIn: false })),
 });

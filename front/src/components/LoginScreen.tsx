@@ -1,9 +1,8 @@
-import Link from "next/link";
-import { CloseSvg } from "./Svgs";
-import type { ComponentProps } from "react";
 import React, { useEffect, useRef, useState } from "react";
 import { useBoundStore } from "~/hooks/useBoundStore";
 import { useRouter } from "next/router";
+import { CloseSvg } from "./Svgs";
+import Link from "next/link";
 
 export type LoginScreenState = "HIDDEN" | "LOGIN";
 
@@ -30,13 +29,11 @@ export const LoginScreen = ({
   const router = useRouter();
   const loggedIn = useBoundStore((x) => x.loggedIn);
   const logIn = useBoundStore((x) => x.logIn);
-  const setUsername = useBoundStore((x) => x.setUsername);
-  const setName = useBoundStore((x) => x.setName);
+  // Usamos setUser en vez de setUsername y setName
+  const setUser = useBoundStore((x) => x.setUser);
 
-  // Estados para DNI y contraseña
   const [dni, setDni] = useState("");
   const [password, setPassword] = useState("");
-
   const [ageTooltipShown, setAgeTooltipShown] = useState(false);
   const nameInputRef = useRef<null | HTMLInputElement>(null);
 
@@ -48,7 +45,6 @@ export const LoginScreen = ({
 
   const logInAndSetUserProperties = async () => {
     try {
-      // Realizamos la petición POST al endpoint /login
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/login`,
         {
@@ -72,20 +68,19 @@ export const LoginScreen = ({
       const jwt = data.access_token;
       console.log("JWT recibido:", jwt);
 
-      // Guardamos el token en localStorage
       localStorage.setItem("token", jwt);
 
-      // Opcional: si estas en signup, usa el input de nombre para configurar el usuario.
-      const name =
-        nameInputRef.current?.value.trim() || Math.random().toString().slice(2);
-      const username = name.replace(/ +/g, "-");
-      setUsername(username);
-      setName(name);
-      
-      // Actualizamos el estado de logueo
-      logIn();
+      // Suponiendo que el backend devuelve datos relevantes del usuario
+      const userData = {
+        DNI: data.DNI || dni, // Usa el DNI proveniente del backend o el ingresado
+        name: data.name || (nameInputRef.current?.value.trim() || "Anonimo"),
+        lastname: data.lastname || "",
+        username: data.username || "", // O podes derivarlo de name si es necesario
+        xpThisWeek: data.xpThisWeek || 0,
+      };
 
-      // Redirigimos al usuario a la siguiente página (por ejemplo, "learn")
+      setUser(userData);
+      logIn();
       router.push("/learn");
     } catch (error) {
       console.error("Error durante el fetch de login:", error);
