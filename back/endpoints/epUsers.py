@@ -149,47 +149,47 @@ def update_profile():
     
     # Recoger los datos enviados en el request
     data = request.get_json()
-    update_fields = {}
-
-    # Solo se actualizan los campos que se envíen en el request
-    if "name" in data:
-        update_fields["name"] = data["name"]
-    if "lastname" in data:
-        update_fields["lastname"] = data["lastname"]
-    if "password" in data:
-        new_password = data["password"]
-        # Hashea la nueva contraseña antes de actualizar
-        update_fields["password"] = generate_password_hash(new_password)
     
-    if not update_fields:
-        return jsonify({"error": "No se han enviado campos para actualizar"}), 400
+    if "currentPassword" not in data or "password" not in data:
+        return jsonify({"error": "Debe proporcionar la contraseña actual y la nueva contraseña"}), 400
 
-    result = mongo.db.users.update_one(
-        {"DNI": current_dni},
-        {"$set": update_fields}
-    )
+    current_password = data["currentPassword"]
+    new_password = data["password"]
 
-    if result.matched_count == 0:
+    user = mongo.db.users.find_one({"DNI": current_dni})
+    if not user:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
+    # Verificar si la contraseña actual es correcta.
+    # Por ejemplo, suponiendo que usás check_password_hash
+    if not check_password_hash(user.get("password", ""), current_password):
+        return jsonify({"error": "Contraseña actual incorrecta"}), 401
+
+    # Si la contraseña es correcta, actualizamos la contraseña (hasheada)
+    mongo.db.users.update_one(
+        {"DNI": current_dni},
+        {"$set": {"password": generate_password_hash(new_password)}}
+    )
+
     # Si la contraseña fue actualizada, enviar un correo de notificación
-    if "password" in update_fields:
+    if "password" in data:
         user = mongo.db.users.find_one({"DNI": current_dni})
         if user:
             email = user.get("email")
             name = user.get("name")
+            lastname = user.get("lastname")
             username = user.get("DNI")  # Suponiendo que el DNI es el username
             # Configurar y enviar el correo
             msg = Message(
                 "Cambio de contraseña",
                 recipients=[email]
             )
-            text_body = f"Hola {name},\n\nSe ha actualizado tu contraseña. La nueva contraseña es: {new_password}\n\n¡Saludos!"
+            text_body = f"Hola {name} {lastname}, \n\nSe ha actualizado tu contraseña. \n\n¡Saludos!"
             html_body = f"""
-            <p>Hola {name},</p>
-            <p>Se ha actualizado tu contraseña. La nueva contraseña es: <strong>{new_password}</strong></p>
+            <p>Hola {name} {lastname}, </p>
+            <p>Se ha actualizado tu contraseña.</p>
             <p>¡Saludos!</p>
-            <p><u>Atte</u>: <u>Equipo de Soporte</u></p>
+            <p><u>Atte</u>: <u>Taller</u> <u>de</u> <u>resolución</u> <u>de</u> <u>problemas</u> <u>UNLu</u></p>
             """
             msg.body = text_body
             msg.html = html_body

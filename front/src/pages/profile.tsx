@@ -109,28 +109,39 @@ const ProfileStatsSection = () => {
 
 const ChangePasswordSection = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
   const router = useRouter();
-  const token = localStorage.getItem("access_token");
+  
+  // Obtenemos el token guardado en localStorage (asegurate de que la clave coincida con la usada en login)
+  const token = localStorage.getItem("token");
 
   const handleChangePassword = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://127.0.0.1:5000/profile", {
+      const res = await fetch("http://127.0.0.1:5000/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify({ password: newPassword }),
+        // Enviamos ambos campos: currentPassword y newPassword
+        body: JSON.stringify({
+          currentPassword,
+          password: newPassword,
+        }),
       });
-      if (response.ok) {
+
+      if (res.ok) {
         setMessage("Contraseña actualizada.");
         setIsEditing(false);
-        // Opcional: recarga de perfil o redirección
+        // Opcional: reinicializar los inputs
+        setCurrentPassword("");
+        setNewPassword("");
       } else {
-        setMessage("Error al actualizar la contraseña.");
+        const errData = await res.json();
+        // El backend debe devolver un mensaje de error si la contraseña actual es incorrecta.
+        setMessage(errData.error || "Contraseña actual incorrecta.");
       }
     } catch (error) {
       console.error("Error updating password:", error);
@@ -148,7 +159,14 @@ const ChangePasswordSection = () => {
           Cambiar contraseña
         </button>
       ) : (
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-col gap-2">
+          <input
+            type="password"
+            placeholder="Contraseña actual"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="border px-2 py-1"
+          />
           <input
             type="password"
             placeholder="Nueva contraseña"
@@ -168,6 +186,7 @@ const ChangePasswordSection = () => {
     </div>
   );
 };
+
 
 const ProfileTopBar = () => {
   return (
