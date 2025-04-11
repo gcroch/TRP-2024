@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import type { BoundStateCreator } from "~/hooks/useBoundStore";
 
 export type UserSlice = {
+  DNI: string;
   name: string;
   username: string;
   joinedAt: dayjs.Dayjs;
@@ -13,6 +14,7 @@ export type UserSlice = {
 };
 
 export const createUserSlice: BoundStateCreator<UserSlice> = (set) => ({
+  DNI: "",
   name: "",
   username: "",
   joinedAt: dayjs(),

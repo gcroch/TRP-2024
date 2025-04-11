@@ -2,8 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/learn": "pages/learn.js",
-  "/leaderboard": "pages/leaderboard.js",
   "/": "pages/index.js",
-  "/profile": "pages/profile.js"
+  "/learn": "pages/learn.js",
+  "/leaderboard": "pages/leaderboard.js"
 }
