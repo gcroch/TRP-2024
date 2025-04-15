@@ -208,6 +208,7 @@ const TileTooltip = ({
   description,
   status,
   closeTooltip,
+  questionId,
 }: {
   selectedTile: number | null;
   index: number;
@@ -275,7 +276,7 @@ const TileTooltip = ({
         </div>
         {status === "ACTIVE" ? (
           <Link
-            href="/lesson"
+            href={`/lesson?questionId=${questionId}`}
             className={[
               "flex w-full items-center justify-center rounded-xl border-b-4 border-gray-200 bg-white p-3 uppercase",
               activeTextColor,
@@ -430,6 +431,7 @@ const UnitSection = ({ unit }: { unit: Unit }): JSX.Element => {
                 })()}
                 status={status}
                 closeTooltip={closeTooltip}
+                questionId={tile.questionId} 
               />
             </Fragment>
           );
@@ -588,7 +590,7 @@ const UnitHeader = ({
           <p className="text-lg">{description}</p>
         </div>
         <Link
-          href={`https://duolingo.com/guidebook/${language.code}/${unitNumber}`}
+          href={``}//aca hay que poner un link al pdf del material del taller.
           className={[
             "flex items-center gap-3 rounded-2xl border-2 border-b-4 p-3 transition hover:text-gray-100",
             borderColor,
