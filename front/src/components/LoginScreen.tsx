@@ -58,34 +58,50 @@ export const LoginScreen = ({
           }),
         }
       );
-
+  
       if (!response.ok) {
         console.error("Error en el login:", await response.text());
         return;
       }
-
+  
       const data = await response.json();
       const jwt = data.access_token;
       console.log("JWT recibido:", jwt);
-
+  
       localStorage.setItem("token", jwt);
-
-      // Suponiendo que el backend devuelve datos relevantes del usuario
-      const userData = {
-        DNI: data.DNI || dni, // Usa el DNI proveniente del backend o el ingresado
-        name: data.name || (nameInputRef.current?.value.trim() || "Anonimo"),
-        lastname: data.lastname || "",
-        username: data.username || "", // O podes derivarlo de name si es necesario
-        xpThisWeek: data.xpThisWeek || 0,
-      };
-
-      setUser(userData);
+  
+      // Llamamos a /profile para obtener el user_id y otros datos
+      const profileRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+  
+      if (!profileRes.ok) {
+        console.error("Error al obtener el perfil:", await profileRes.text());
+        return;
+      }
+  
+      const profile = await profileRes.json();
+  
+      // Seteamos el user en el store, incluyendo el user_id
+      setUser({
+        userId: profile.user_id?.$oid, // ¡Este es el valor que necesitás!
+        DNI: profile.DNI || dni,
+        name: profile.name || "Anonimo",
+        lastname: profile.lastname || "",
+        username: profile.username || "", // o generarlo a partir del nombre
+        xpThisWeek: profile.exp || 0,
+      });
+  
       logIn();
       router.push("/learn");
     } catch (error) {
       console.error("Error durante el fetch de login:", error);
     }
   };
+  
 
   return (
     <article

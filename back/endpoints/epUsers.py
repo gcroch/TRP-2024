@@ -9,52 +9,62 @@ users_bp = Blueprint('users', __name__)
 
 
 @users_bp.route('/users', methods=['GET'])
-#@jwt_required()  # Puedes descomentar si requieres autenticación en este endpoint
-def get_all_users():
-    """
-    Lista todos los usuarios con su experiencia acumulada y retorna los top 10.
-    Se excluye la contraseña de la salida.
-    """
-    users_cursor = mongo.db.users.find()
-    users_list = []
+##@jwt_required()
+def get_users():
+    users = mongo.db.users.find()
+    all_users_data = []
     
-    for user in users_cursor:
-        # Guardamos el _id original para la consulta
-        original_id = user.get("_id")
-        
-        # Calcular la experiencia total acumulada para este usuario
+    for user in users:
         totalExp = 0
-        answers = mongo.db.answers.find({"user_id": original_id})
+        # Se buscan todas las respuestas del usuario
+        answers = mongo.db.answers.find({"user_id": user["_id"]})
+        
+        # Cargar las preguntas en un diccionario para evitar múltiples consultas
+        questions = {q["_id"]: q for q in mongo.db.questions.find()}
+        
         for answer in answers:
-            # Obtener la pregunta correspondiente a la respuesta
-            question = mongo.db.questions.find_one({"_id": answer["question_id"]})
+            question = questions.get(answer["question_id"])
             if question:
+                print(f"Procesando respuesta para la pregunta {question['_id']}")  # Depuración
                 try:
-                    # Se asume que selectedOption es una cadena numérica y que las opciones comienzan en 1
-                    idx = int(answer["selectedOption"]) - 1
-                    if idx < len(question["options"]) and question["options"][idx].get("isCorrect") is True:
-                        totalExp += question.get("exp", 0)
-                except Exception as e:
-                    print("Error procesando la respuesta:", e)
-        
-        # Agregar el campo de experiencia
-        user["exp"] = totalExp
-        
-        # Excluir la contraseña
-        user.pop("password", None)
-        
-        # Convertir el _id a cadena para serializar
-        if "_id" in user:
-            user["_id"] = str(user["_id"])
-        
-        users_list.append(user)
+                    # Procesar preguntas del tipo "choice"
+                    if "selectedOption" in answer:
+                        idx = int(answer["selectedOption"])
+                        print(f"Índice de opción seleccionada: {idx}")  # Depuración
+                        # Verificar que el índice sea válido y que la opción seleccionada sea correcta
+                        if 0 <= idx < len(question["options"]):
+                            selected_option = question["options"][idx]
+                            print(f"Verificando opción: {selected_option}")  # Depuración
+                            if selected_option.get("isCorrect"):
+                                totalExp += question.get("exp", 0)
+                                print(f"Experiencia sumada: {question.get('exp', 0)}")  # Depuración
+                    
+                    # Procesar preguntas del tipo "OpenEntry"
+                    elif "body" in answer:
+                        print(f"Verificando respuesta abierta: {answer['body']}")  # Depuración
+                        # Aquí puedes agregar la lógica para evaluar la respuesta de tipo OpenEntry
+                        # Ejemplo de validación:
+                        if validate_open_entry_answer(question, answer["body"]):
+                            totalExp += question.get("exp", 0)
+                            print(f"Experiencia sumada por OpenEntry: {question.get('exp', 0)}")  # Depuración
 
-    # Ordenar la lista en orden descendente según la experiencia acumulada
-    users_list_sorted = sorted(users_list, key=lambda x: x.get("exp", 0), reverse=True)
+                except (ValueError, IndexError) as e:
+                    print(f"Error procesando la respuesta: {e}")  # Depuración
+        
+        user_data = {
+            "user_id": user.get("_id"),
+            "DNI": user.get("DNI"),
+            "name": user.get("name"),
+            "lastname": user.get("lastname"),
+            "email": user.get("email"),
+            "role": user.get("role"),
+            "exp": totalExp  # Experiencia acumulada
+        }
+        
+        all_users_data.append(user_data)
     
-    # Retornar solo el top 10
-    # top_10 = users_list_sorted[:10]
-    return jsonify(users_list_sorted), 200
+    return jsonify(all_users_data), 200
+
 
 @users_bp.route('/register', methods=['POST'])
 def register():
@@ -132,6 +142,7 @@ def profile():
                 except Exception as e:
                     print("Error procesando la respuesta:", e)
         user_data = {
+            "user_id": user.get("_id"),
             "DNI": user.get("DNI"),
             "name": user.get("name"),
             "lastname": user.get("lastname"),
@@ -196,3 +207,9 @@ def update_profile():
             current_app.extensions['mail'].send(msg)
 
     return jsonify({"message": "Usuario actualizado exitosamente"}), 200
+def validate_open_entry_answer(question, user_answer):
+    # Validar la respuesta abierta
+    correct_answer = question.get("expectedAnswer", "").strip().lower()
+    user_answer = user_answer.strip().lower()
+    print(f"Validando respuesta abierta: '{user_answer}' == '{correct_answer}'")  # Depuración
+    return user_answer == correct_answer
