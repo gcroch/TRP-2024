@@ -49,16 +49,6 @@ export const TopBar = ({
       <div
         className={`relative flex h-full w-full items-center justify-between border-b-2 px-[10px] transition duration-500 sm:hidden ${borderColor} ${backgroundColor}`}
       >
-        <button
-          className="flex items-center gap-2 font-bold text-white"
-          onClick={() => setMenu((x) => (x === "STREAK" ? "HIDDEN" : "STREAK"))}
-          aria-label="Toggle streak menu"
-        >
-          {streak > 0 ? <FireSvg /> : <EmptyFireTopBarSvg />}{" "}
-          <span className={streak > 0 ? "text-white" : "text-black opacity-20"}>
-            {streak}
-          </span>
-        </button>
         <MoreOptionsSvg
           onClick={() => setMenu((x) => (x === "MORE" ? "HIDDEN" : "MORE"))}
           role="button"
@@ -75,18 +65,7 @@ export const TopBar = ({
         >
           {((): null | JSX.Element => {
             switch (menu) {
-              case "STREAK":
-                return (
-                  <div className="flex grow flex-col items-center gap-3 p-5">
-                    <h2 className="text-xl font-bold">Racha</h2>
-                    <p className="text-sm text-gray-400">
-                      {`Racha de dias consecutivos aprendiendo!`}
-                    </p>
-                    <div className="self-stretch">
-                      <Calendar now={now} setNow={setNow} />
-                    </div>
-                  </div>
-                );
+              
 
               case "MORE":
                 return (
