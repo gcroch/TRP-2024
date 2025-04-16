@@ -95,7 +95,7 @@ const mapQuestionsToUnits = (units: Unit[], questions: Question[]): Unit[] => {
 type TileStatus = "LOCKED" | "ACTIVE" | "COMPLETE";
 
 const tileStatus = (tile: any, lessonsCompleted: number, unitTiles: any[]): TileStatus => {
-  const lessonsPerTile = 4;
+  const lessonsPerTile = 1;
   const tilesCompleted = Math.floor(lessonsCompleted / lessonsPerTile);
   const tileIndex = unitTiles.findIndex((t: any) => t === tile);
   if (tileIndex < tilesCompleted) return "COMPLETE";
@@ -289,12 +289,7 @@ const TileTooltip = ({
             Locked
           </button>
         ) : (
-          <Link
-            href="/lesson"
-            className="flex w-full items-center justify-center rounded-xl border-b-4 border-yellow-200 bg-white p-3 uppercase text-yellow-400"
-          >
-            Practice +5 XP
-          </Link>
+          <></>
         )}
       </div>
     </div>

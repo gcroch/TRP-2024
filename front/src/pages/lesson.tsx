@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { withAuth } from "~/components/withAuth";
 import { useBoundStore } from "~/hooks/useBoundStore";
 
-// Interfaz según tu backend para la pregunta
+// Interfaz según tu backend
 interface Question {
   _id: string;
   type: "Choice" | "OpenEntry";
@@ -18,10 +18,9 @@ interface Question {
   expectedAnswer?: string;
 }
 
-// Interfaz para construir el payload de respuesta (formato que espera el backend)
 interface AnswerRequest {
-  question_id: { "$oid": string };
-  user_id: { "$oid": string };
+  question_id: object;
+  user_id: object;
   selectedOption?: string;
   body?: string;
 }
@@ -30,22 +29,22 @@ const Lesson: NextPage = () => {
   const router = useRouter();
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Estados para capturar la respuesta del usuario:
-  const [userAnswer, setUserAnswer] = useState<string>(""); // Para preguntas OpenEntry
-  const [selectedOption, setSelectedOption] = useState<number | null>(null); // Para preguntas Choice
+  const [userAnswer, setUserAnswer] = useState<string>("");
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string>("");
 
-  // Obtenemos el userId del store (verifica que se setee correctamente en el login)
+  // Obtenemos userId y el método para aumentar las lecciones completadas desde la store
   const userId = useBoundStore((x) => x.userId);
+  const increaseLessonsCompleted = useBoundStore((x) => x.increaseLessonsCompleted);
 
-  // Al montar, leemos el parámetro ?questionId=... de la URL y buscamos la pregunta correspondiente
+  // Al montar el componente, extraemos la query ?questionId=... y consultamos el backend
   useEffect(() => {
     const questionId = router.query["questionId"];
     if (!questionId || typeof questionId !== "string") {
       setLoading(false);
       return;
     }
+
     const fetchQuestion = async () => {
       try {
         const res = await fetch(`http://127.0.0.1:5000/questions/${questionId}`);
@@ -60,60 +59,51 @@ const Lesson: NextPage = () => {
         setLoading(false);
       }
     };
+
     fetchQuestion();
   }, [router.query]);
 
-  // Función para manejar cuando el usuario confirma su respuesta
+  // Función para manejar la confirmación de respuesta
   const handleConfirm = async () => {
     if (!question) return;
 
+    let correct = false;
     if (question.type === "Choice" && question.options) {
-      const correctIndex = question.options.findIndex(opt => opt.isCorrect);
-      if (selectedOption === correctIndex) {
-        setFeedback("¡Correcto!");
-      } else {
-        setFeedback("Respuesta incorrecta");
-      }
+      const correctIndex = question.options.findIndex((opt) => opt.isCorrect);
+      correct = selectedOption === correctIndex;
+      setFeedback(correct ? "¡Correcto!" : "Respuesta incorrecta");
       await submitAnswer(question._id, question.type, selectedOption?.toString() || "");
     } else if (question.type === "OpenEntry" && question.expectedAnswer) {
-      if (
-        userAnswer.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase()
-      ) {
-        setFeedback("¡Correcto!");
-      } else {
-        setFeedback(`Respuesta incorrecta. Correcta: ${question.expectedAnswer}`);
-      }
+      correct = userAnswer.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase();
+      setFeedback(correct ? "¡Correcto!" : `Respuesta incorrecta. Correcta: ${question.expectedAnswer}`);
       await submitAnswer(question._id, question.type, userAnswer);
     }
 
-    // Se espera un segundo para mostrar el feedback y se redirige a /learn
+    // Si la respuesta fue correcta, incrementamos las lecciones completadas
+    if (correct) {
+      increaseLessonsCompleted(1);
+    }
+
+    // Espera un momento para mostrar el feedback y redirige a Learn
     await new Promise((resolve) => setTimeout(resolve, 1000));
     router.push("/learn");
   };
 
   // Función auxiliar para enviar la respuesta al backend
-  const submitAnswer = async (
-    questionId: string,
-    questionType: string,
-    userResponse: string
-  ) => {
-    if (!userId) {
-      console.error("Error submitAnswer: userId es undefined en el store");
-      return;
-    }
-    // Construimos el payload en el formato requerido:
-    const payload: AnswerRequest = {
-      question_id: { "$oid": questionId },
-      user_id: { "$oid": userId },
-    };
-    if (questionType === "Choice") {
-      payload.selectedOption = userResponse;
-    } else if (questionType === "OpenEntry") {
-      payload.body = userResponse;
-    }
-
-    console.log("Enviando payload:", payload);
+  const submitAnswer = async (questionId: string, questionType: string, userResponse: string) => {
     try {
+      const payload: Record<string, unknown> = {
+        question_id: { $oid: questionId },
+        user_id: { $oid: userId },
+      };
+
+      if (questionType === "Choice") {
+        payload.selectedOption = userResponse;
+      } else if (questionType === "OpenEntry") {
+        payload.body = userResponse;
+      }
+      console.log("Enviando payload:", payload);
+
       const res = await fetch("http://127.0.0.1:5000/answers", {
         method: "POST",
         headers: {
@@ -121,10 +111,12 @@ const Lesson: NextPage = () => {
         },
         body: JSON.stringify(payload),
       });
+
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error("Error posting answer: " + errorText);
       }
+
       console.log("Respuesta enviada correctamente");
     } catch (err) {
       console.error("Error submitAnswer:", err);
@@ -134,6 +126,7 @@ const Lesson: NextPage = () => {
   if (loading) {
     return <div className="p-5">Cargando...</div>;
   }
+
   if (!question) {
     return <div className="p-5">No se encontró la pregunta.</div>;
   }

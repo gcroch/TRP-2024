@@ -87,7 +87,7 @@ export const LoginScreen = ({
   
       // Seteamos el user en el store, incluyendo el user_id
       setUser({
-        userId: profile.userId, // ¡Este es el valor que necesitás!
+        userId: profile.userId,
         DNI: profile.DNI || dni,
         name: profile.name || "Anonimo",
         lastname: profile.lastname || "",
