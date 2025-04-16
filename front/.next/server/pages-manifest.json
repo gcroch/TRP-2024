@@ -3,7 +3,7 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/learn": "pages/learn.js",
-  "/profile": "pages/profile.js",
-  "/": "pages/index.js",
-  "/lesson": "pages/lesson.js"
+  "/lesson": "pages/lesson.js",
+  "/leaderboard": "pages/leaderboard.js",
+  "/profile": "pages/profile.js"
 }

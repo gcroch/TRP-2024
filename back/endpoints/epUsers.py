@@ -235,3 +235,55 @@ def validate_open_entry_answer(question, user_answer):
     user_answer = user_answer.strip().lower()
     print(f"Validando respuesta abierta: '{user_answer}' == '{correct_answer}'")  # Depuración
     return user_answer == correct_answer
+
+@users_bp.route('/user-progress', methods=['GET'])
+@jwt_required()
+def get_user_progress():
+    current_dni = get_jwt_identity()
+    user = mongo.db.users.find_one({"DNI": current_dni})
+
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    user_id = user["_id"]
+
+    # Obtener todas las respuestas del usuario
+    answers = mongo.db.answers.find({"user_id": user_id})
+
+    # Cargar todas las preguntas en un diccionario para acceso rápido
+    questions = {q["_id"]: q for q in mongo.db.questions.find()}
+
+    # Inicializar un diccionario para almacenar el progreso por unidad
+    progress_by_unit = {}
+
+    for answer in answers:
+        question_id = answer.get("question_id")
+        question = questions.get(question_id)
+
+        if not question:
+            continue
+
+        unit_id = str(question.get("unit_id"))
+
+        # Verificar si la respuesta es correcta
+        is_correct = False
+        if "selectedOption" in answer:
+            try:
+                idx = int(answer["selectedOption"])
+                options = question.get("options", [])
+                if 0 <= idx < len(options):
+                    selected_option = options[idx]
+                    is_correct = selected_option.get("isCorrect", False)
+            except (ValueError, IndexError):
+                continue
+        elif "body" in answer:
+            correct_answer = question.get("expectedAnswer", "").strip().lower()
+            user_answer = answer["body"].strip().lower()
+            is_correct = user_answer == correct_answer
+
+        if is_correct:
+            if unit_id not in progress_by_unit:
+                progress_by_unit[unit_id] = []
+            progress_by_unit[unit_id].append(str(question_id))
+
+    return jsonify(progress_by_unit), 200
