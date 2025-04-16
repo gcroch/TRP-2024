@@ -10,7 +10,7 @@ export type UserSlice = {
   joinedAt: dayjs.Dayjs;
   xpThisWeek: number;
   loggedIn: boolean;
-  setUser: (user: { DNI: string; name: string; lastname: string; username: string; xpThisWeek?: number }) => void;
+  setUser: (user: { userId: string; DNI: string; name: string; lastname: string; username: string; xpThisWeek?: number }) => void;
   logIn: () => void;
   logOut: () => void;
 };

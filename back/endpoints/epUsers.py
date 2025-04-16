@@ -161,6 +161,7 @@ def get_profile():
                 print(f"Error procesando respuesta: {e}")
 
     profile = {
+        "userId": str(user["_id"]),
         "DNI": user["DNI"],
         "name": user["name"],
         "lastname": user["lastname"],
