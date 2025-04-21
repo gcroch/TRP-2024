@@ -105,6 +105,12 @@ const UsersAdmin: NextPage = () => {
         <button className="bg-green-500 text-white px-4 py-2 rounded">
           Crear Usuario
         </button>
+        <button
+          onClick={() => router.push("/admin/users/report")}
+          className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
+        >
+          Ver Reporte Global
+        </button>
       </form>
     </div>
   );

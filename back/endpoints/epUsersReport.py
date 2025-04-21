@@ -42,6 +42,7 @@ def user_report():
         return {
             "user": {
                 "id": str(user_obj_id),
+                "DNI": user.get("DNI"),
                 "name": user.get("name"),
                 "lastname": user.get("lastname")
             },
