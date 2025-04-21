@@ -3,5 +3,10 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/learn": "pages/learn.js",
-  "/": "pages/index.js"
+  "/lesson": "pages/lesson.js",
+  "/profile": "pages/profile.js",
+  "/admin/units": "pages/admin/units.js",
+  "/": "pages/index.js",
+  "/admin/users": "pages/admin/users.js",
+  "/admin/users/[id]": "pages/admin/users/[id].js"
 }

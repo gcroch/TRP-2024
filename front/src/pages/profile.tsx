@@ -1,6 +1,7 @@
+// pages/profile.tsx
 import { type NextPage } from "next";
 import Link from "next/link";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   EmptyFireSvg,
   FireSvg,
@@ -15,142 +16,128 @@ import { LoginScreen, useLoginScreen } from "~/components/LoginScreen";
 import { useBoundStore } from "~/hooks/useBoundStore";
 import { withAuth } from "~/components/withAuth";
 
-// Hook para obtener los datos de perfil del usuario desde la API backend
-const useUserProfile = () => {
-  const [profile, setProfile] = useState<{
-    DNI: string;
-    name: string;
-    lastname: string;
-    email: string;
-    role: string;
-    exp: number;
-  } | null>(null);
+// --------------------------------------------------
+// Hook para obtener el perfil (incluye role)
+// --------------------------------------------------
+interface UserProfile {
+  userId: string;
+  DNI: string;
+  name: string;
+  lastname: string;
+  email: string;
+  role: string;
+  exp: number;
+}
+
+const useUserProfile = (): UserProfile | null => {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token"); // Se asume que ya se guardó el JWT al hacer login
-    if (token) {
-      fetch("http://127.0.0.1:5000/profile", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch("http://127.0.0.1:5000/profile", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Error al obtener perfil");
+        return res.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Error al obtener el perfil");
-          }
-          return response.json();
-        })
-        .then((data) => setProfile(data))
-        .catch((error) => console.error("Error fetching profile:", error));
-    }
+      .then((data) => {
+        // Ajusta según el shape de tu respuesta
+        setProfile({
+          userId: data.userId,
+          DNI: data.DNI,
+          name: data.name,
+          lastname: data.lastname,
+          email: data.email,
+          role: data.role,
+          exp: data.exp,
+        });
+      })
+      .catch((err) => {
+        console.error("fetch profile:", err);
+      });
   }, []);
 
   return profile;
 };
-const ProfileTopSection = () => {
-  const router = useRouter();
-  const loggedIn = useBoundStore((x) => x.loggedIn);
-  const profile = useUserProfile();
 
-  useEffect(() => {
-    if (!loggedIn) {
-      void router.push("/");
-    }
-  }, [loggedIn, router]);
-
-  if (!profile) {
-    return <div className="p-5 text-center">Cargando perfil...</div>;
-  }
-
-  return (
-    <section className="flex flex-row-reverse border-b-2 border-gray-200 pb-8 md:flex-row md:gap-8">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-gray-400 text-3xl font-bold text-gray-400 md:h-44 md:w-44 md:text-7xl">
-        {profile.name.charAt(0).toUpperCase()}
-      </div>
-      <div className="flex grow flex-col justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <div>
-            <h1 className="text-2xl font-bold">
-              {profile.name} {profile.lastname}
-            </h1>
-            <div className="text-sm text-gray-400">{profile.DNI}</div>
-          </div>
-          <div className="flex items-center gap-3">
-            <ProfileTimeJoinedSvg />
-            <span className="text-gray-500">{profile.email}</span>
-          </div>
+// --------------------------------------------------
+// Secciones del perfil
+// --------------------------------------------------
+const ProfileTopSection = ({ profile }: { profile: UserProfile }) => (
+  <section className="flex flex-row-reverse border-b-2 border-gray-200 pb-8 md:flex-row md:gap-8">
+    <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-gray-400 text-3xl font-bold text-gray-400 md:h-44 md:w-44 md:text-7xl">
+      {profile.name.charAt(0).toUpperCase()}
+    </div>
+    <div className="flex grow flex-col justify-between gap-3">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-bold">
+          {profile.name} {profile.lastname}
+        </h1>
+        <div className="text-sm text-gray-400">{profile.DNI}</div>
+        <div className="flex items-center gap-3">
+          <ProfileTimeJoinedSvg />
+          <span className="text-gray-500">{profile.email}</span>
         </div>
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
-const ProfileStatsSection = () => {
-  const profile = useUserProfile();
-  const totalXp = profile?.exp ?? 0;
-
-  return (
-    <section>
-      <h2 className="mb-5 text-2xl font-bold">Estadisticas</h2>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex gap-2 rounded-2xl border-2 border-gray-200 p-2 md:gap-3 md:px-6 md:py-4">
-          <LightningProgressSvg size={35} />
-          <div className="flex flex-col">
-            <span className="text-xl font-bold">{totalXp}</span>
-            <span className="text-sm text-gray-400 md:text-base">Total XP</span>
-          </div>
+const ProfileStatsSection = ({ exp }: { exp: number }) => (
+  <section>
+    <h2 className="mb-5 text-2xl font-bold">Estadísticas</h2>
+    <div className="grid grid-cols-2 gap-3">
+      <div className="flex gap-2 rounded-2xl border-2 border-gray-200 p-2 md:gap-3 md:px-6 md:py-4">
+        <LightningProgressSvg size={35} />
+        <div className="flex flex-col">
+          <span className="text-xl font-bold">{exp}</span>
+          <span className="text-sm text-gray-400 md:text-base">Total XP</span>
         </div>
       </div>
-    </section>
-  );
-};
+    </div>
+  </section>
+);
 
 const ChangePasswordSection = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [message, setMessage] = useState("");
-  const router = useRouter();
-  
-  // Obtenemos el token guardado en localStorage (asegurate de que la clave coincida con la usada en login)
   const token = localStorage.getItem("token");
 
   const handleChangePassword = async () => {
-    try {
-      const res = await fetch("http://127.0.0.1:5000/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        // Enviamos ambos campos: currentPassword y newPassword
-        body: JSON.stringify({
-          currentPassword,
-          password: newPassword,
-        }),
-      });
-
-      if (res.ok) {
-        setMessage("Contraseña actualizada.");
-        setIsEditing(false);
-        // Opcional: reinicializar los inputs
-        setCurrentPassword("");
-        setNewPassword("");
-      } else {
-        const errData = await res.json();
-        // El backend debe devolver un mensaje de error si la contraseña actual es incorrecta.
-        setMessage(errData.error || "Contraseña actual incorrecta.");
-      }
-    } catch (error) {
-      console.error("Error updating password:", error);
-      setMessage("Error al actualizar la contraseña.");
+    if (!token) return;
+    const res = await fetch("http://127.0.0.1:5000/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        currentPassword,
+        password: newPassword,
+      }),
+    });
+    if (res.ok) {
+      setMessage("Contraseña actualizada.");
+      setIsEditing(false);
+      setCurrentPassword("");
+      setNewPassword("");
+    } else {
+      const errData = await res.json();
+      setMessage(errData.error || "Error al actualizar contraseña");
     }
   };
 
   return (
-    <div className="mt-4">
+    <section className="mt-8">
       {!isEditing ? (
         <button
           onClick={() => setIsEditing(true)}
@@ -159,7 +146,7 @@ const ChangePasswordSection = () => {
           Cambiar contraseña
         </button>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 max-w-sm">
           <input
             type="password"
             placeholder="Contraseña actual"
@@ -178,39 +165,83 @@ const ChangePasswordSection = () => {
             onClick={handleChangePassword}
             className="bg-green-500 text-white px-4 py-2 rounded"
           >
-            OK
+            Guardar
           </button>
         </div>
       )}
-      {message && <div className="mt-2 text-sm text-center">{message}</div>}
-    </div>
+      {message && <p className="mt-2 text-sm text-center">{message}</p>}
+    </section>
   );
 };
 
+// SVG de ejemplo para “time joined”
+const ProfileTimeJoinedSvg = () => (
+  <svg width="24" height="24">
+    <circle cx="12" cy="12" r="10" fill="#888" />
+  </svg>
+);
 
-const ProfileTopBar = () => {
-  return (
-    <div className="fixed left-0 right-0 top-0 flex h-16 items-center justify-between border-b-2 border-gray-200 bg-white px-5 text-xl font-bold text-gray-300 md:hidden">
-      <span className="text-gray-400">Perfil</span>
-    </div>
-  );
-};
-
+// --------------------------------------------------
+// Página completa
+// --------------------------------------------------
 const Profile: NextPage = () => {
   const { loginScreenState, setLoginScreenState } = useLoginScreen();
+  const router = useRouter();
+  const profile = useUserProfile();
+
+  // Si no está logueado lo mandamos al login
+  const loggedIn = useBoundStore((x) => x.loggedIn);
+  useEffect(() => {
+    if (!loggedIn) router.push("/");
+  }, [loggedIn, router]);
+
+  if (!profile) {
+    return (
+      <div className="p-6 text-center">
+        <p>Cargando perfil...</p>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <ProfileTopBar />
+    <div className="min-h-screen">
+      <TopBar backgroundColor="bg-white" borderColor="border-gray-200" />
       <LeftBar selectedTab="Profile" />
-      <div className="flex justify-center gap-3 pt-14 md:ml-24 lg:ml-64 lg:gap-12">
-        <div className="flex w-full max-w-4xl flex-col gap-5 p-5">
-          <ProfileTopSection />
-          <ProfileStatsSection />
-          <ChangePasswordSection />
-        </div>
-      </div>
-      <div className="pt-[90px]"></div>
+
+      <main className="pt-14 md:ml-24 lg:ml-64 p-5 max-w-4xl mx-auto space-y-8">
+        <ProfileTopSection profile={profile} />
+        <ProfileStatsSection exp={profile.exp} />
+        <ChangePasswordSection />
+
+        {/* — Sección de administración solo para admins — */}
+        {profile.role === "admin" && (
+          <section className="mt-12 border-t pt-6 space-y-4">
+            <h2 className="text-2xl font-bold">Administración</h2>
+            <div className="flex flex-col gap-3 max-w-sm">
+              <button
+                onClick={() => router.push("/admin/units")}
+                className="w-full bg-indigo-600 text-white py-2 rounded"
+              >
+                ABM Unidades
+              </button>
+              <button
+                onClick={() => router.push("/admin/questions")}
+                className="w-full bg-indigo-600 text-white py-2 rounded"
+              >
+                ABM Preguntas
+              </button>
+              <button
+                onClick={() => router.push("/admin/users")}
+                className="w-full bg-indigo-600 text-white py-2 rounded"
+              >
+                ABM Usuarios
+              </button>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <RightBar />
       <BottomBar selectedTab="Profile" />
       <LoginScreen
         loginScreenState={loginScreenState}
@@ -221,12 +252,3 @@ const Profile: NextPage = () => {
 };
 
 export default withAuth(Profile);
-// Componente para mostrar la información "time joined"
-// Puedes adaptarlo o reemplazarlo con el SVG real que necesites
-const ProfileTimeJoinedSvg = () => {
-  return (
-    <svg width="24" height="24">
-      <circle cx="12" cy="12" r="10" fill="#888" />
-    </svg>
-  );
-};
