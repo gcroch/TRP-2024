@@ -245,6 +245,13 @@ const EditQuestion: NextPage = () => {
           >
             Eliminar
           </button>
+          <button
+            type="button"
+            onClick={() => router.push(`/admin/questions/${id}/answers`)}
+            className="bg-gray-500 text-white px-4 py-2 rounded"
+          >
+            Ver respuestas de esta pregunta
+          </button>
         </div>
       </form>
     </div>

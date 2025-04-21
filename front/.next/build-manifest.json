@@ -22,15 +22,15 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/admin/users/[id]": [
+    "/admin/questions/[id]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/users/[id].js"
+      "static/chunks/pages/admin/questions/[id].js"
     ],
-    "/admin/users/[id]/report": [
+    "/admin/questions/[id]/answers": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/users/[id]/report.js"
+      "static/chunks/pages/admin/questions/[id]/answers.js"
     ]
   },
   "ampFirstPages": []
