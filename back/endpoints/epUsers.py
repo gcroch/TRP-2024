@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identi
 from extensions import mongo
 from utils import generate_random_password
 from flask_mail import Mail, Message
+from bson import ObjectId
 
 
 users_bp = Blueprint('users', __name__)
@@ -287,3 +288,19 @@ def get_user_progress():
             progress_by_unit[unit_id].append(str(question_id))
 
     return jsonify(progress_by_unit), 200
+
+@users_bp.route('/users/<user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    try:
+        result = mongo.db.users.delete_one({"_id": ObjectId(user_id)})
+
+        if result.deleted_count == 0:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        # Eliminar también las respuestas asociadas a ese usuario, si aplica
+        mongo.db.answers.delete_many({"user_id": ObjectId(user_id)})
+
+        return jsonify({"message": "Usuario eliminado exitosamente"}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Error eliminando usuario: {str(e)}"}), 500
