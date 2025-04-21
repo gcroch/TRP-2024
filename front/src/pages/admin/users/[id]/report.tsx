@@ -24,14 +24,11 @@ const UserReport = () => {
       .then(r => r.json())
       .then(data => {
         console.log("Received data:", data);
-        if (!Array.isArray(data) || data.length === 0) return;
+        if (!data || !data.questions_answered) return;
 
-        const userReport = data[0];
-        setUserName(userReport.user?.name ?? "Usuario sin nombre");
+        setUserName(data.user?.name + " " + data.user?.lastname + " (" + data.user?.DNI + ") " ?? "Usuario sin nombre");
 
-        const transformed: ReportEntry[] = [];
-
-        userReport.questions_answered.forEach((qa: any) => {
+        const transformed: ReportEntry[] = data.questions_answered.map((qa: any) => {
           const question = qa.question;
           const answer = qa.answer;
 
@@ -52,7 +49,7 @@ const UserReport = () => {
             answer_text = answer.body;
           }
 
-          transformed.push({ question_text, answer: answer_text });
+          return { question_text, answer: answer_text };
         });
 
         setReport(transformed);

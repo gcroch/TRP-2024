@@ -119,7 +119,11 @@ const EditUser: NextPage = () => {
           Eliminar Usuario
         </button>
         <button
-          onClick={() => router.push(`/admin/users/${id}/report`)}
+          type="button"
+          onClick={() => {
+            console.log("ID antes del push:", id);
+            router.push(`/admin/users/${id}/report`);
+          }}
           className="bg-indigo-600 text-white px-4 py-2 rounded mt-4"
         >
           Ver Respuestas del Usuario

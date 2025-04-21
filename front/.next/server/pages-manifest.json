@@ -2,11 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/admin/users/report": "pages/admin/users/report.js",
-  "/admin/users": "pages/admin/users.js",
-  "/": "pages/index.js",
-  "/learn": "pages/learn.js",
-  "/profile": "pages/profile.js",
   "/admin/users/[id]": "pages/admin/users/[id].js",
+  "/admin/users": "pages/admin/users.js",
   "/admin/users/[id]/report": "pages/admin/users/[id]/report.js"
 }
