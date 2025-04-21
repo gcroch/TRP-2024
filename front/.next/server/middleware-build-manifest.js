@@ -24,11 +24,6 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/admin/units": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/admin/units.js"
-    ],
     "/admin/users": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -43,11 +38,6 @@ self.__BUILD_MANIFEST = {
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/learn.js"
-    ],
-    "/lesson": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/lesson.js"
     ],
     "/profile": [
       "static/chunks/webpack.js",

@@ -10,6 +10,7 @@ from bson import ObjectId
 users_bp = Blueprint('users', __name__)
 
 
+
 @users_bp.route('/users', methods=['GET'])
 ##@jwt_required()
 def get_users():
@@ -304,3 +305,32 @@ def delete_user(user_id):
 
     except Exception as e:
         return jsonify({"error": f"Error eliminando usuario: {str(e)}"}), 500
+@users_bp.route('/users/<user_id>', methods=['GET'])
+def get_user(user_id):
+    try:
+        user = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user['_id'] = str(user['_id'])  # Convertir ObjectId a string
+            return jsonify(user), 200
+        else:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Error obteniendo usuario: {str(e)}"}), 500
+    
+@users_bp.route('/users/<id>', methods=['PUT'])
+#@jwt_required()
+def update_user(id):
+    data = request.get_json()
+    # Lógica para actualizar usuario
+    # Por ejemplo con MongoDB:
+    updated = {
+        "DNI": data["DNI"],
+        "name": data["name"],
+        "lastname": data["lastname"],
+        "email": data["email"],
+        "role": data["role"]
+    }
+    result = mongo.db.users.update_one({"_id": ObjectId(id)}, {"$set": updated})
+    if result.modified_count:
+        return jsonify({"message": "Usuario actualizado"}), 200
+    return jsonify({"message": "Usuario no encontrado o sin cambios"}), 404

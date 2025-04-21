@@ -25,8 +25,15 @@ const UsersAdmin: NextPage = () => {
     fetch("http://127.0.0.1:5000/users", {
       headers: { Authorization:`Bearer ${token}` }
     })
-      .then(r=>r.json())
-      .then(setUsers);
+      .then(r => r.json())
+      .then(data => {
+        const formatted = data.map((u: any) => ({
+          ...u,
+          _id: u.user_id?.$oid || "",  // 👈 agrega un _id string plano
+        }));
+        console.log("Usuarios transformados:", formatted);
+        setUsers(formatted);
+      });
   }, []);
 
   const handleCreate = async (e:FormEvent) => {

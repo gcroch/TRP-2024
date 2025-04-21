@@ -2,11 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/learn": "pages/learn.js",
-  "/lesson": "pages/lesson.js",
-  "/profile": "pages/profile.js",
-  "/admin/units": "pages/admin/units.js",
-  "/": "pages/index.js",
   "/admin/users": "pages/admin/users.js",
-  "/admin/users/[id]": "pages/admin/users/[id].js"
+  "/": "pages/index.js",
+  "/admin/users/[id]": "pages/admin/users/[id].js",
+  "/learn": "pages/learn.js",
+  "/profile": "pages/profile.js"
 }
