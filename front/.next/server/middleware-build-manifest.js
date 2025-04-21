@@ -29,6 +29,16 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/admin/questions.js"
     ],
+    "/admin/questions/[id]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/questions/[id].js"
+    ],
+    "/admin/questions/[id]/answers": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/admin/questions/[id]/answers.js"
+    ],
     "/admin/units": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -38,6 +48,11 @@ self.__BUILD_MANIFEST = {
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/admin/users.js"
+    ],
+    "/leaderboard": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/leaderboard.js"
     ],
     "/learn": [
       "static/chunks/webpack.js",

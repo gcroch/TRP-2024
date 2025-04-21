@@ -75,7 +75,7 @@ const Lesson: NextPage = () => {
       await submitAnswer(question._id, question.type, selectedOption?.toString() || "");
     } else if (question.type === "OpenEntry" && question.expectedAnswer) {
       correct = userAnswer.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase();
-      setFeedback(correct ? "¡Correcto!" : `Respuesta incorrecta. Correcta: ${question.expectedAnswer}`);
+      setFeedback(correct ? "¡Correcto!" : `Respuesta incorrecta.`);
       await submitAnswer(question._id, question.type, userAnswer);
     }
 
