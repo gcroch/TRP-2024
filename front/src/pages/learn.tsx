@@ -1,6 +1,6 @@
 import { type NextPage } from "next";
 import Link from "next/link";
-import { Fragment, useEffect, useState, useCallback, useRef } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { withAuth } from "~/components/withAuth";
 import { useUnits } from "~/hooks/useUnits";
@@ -11,25 +11,9 @@ import {
   ActiveBookSvg,
   LockedBookSvg,
   CheckmarkSvg,
-  LockedDumbbellSvg,
-  FastForwardSvg,
-  GoldenBookSvg,
-  GoldenDumbbellSvg,
-  GoldenTreasureSvg,
-  GoldenTrophySvg,
-  GuidebookSvg,
-  LessonCompletionSvg0,
-  LessonCompletionSvg1,
-  LessonCompletionSvg2,
-  LessonCompletionSvg3,
   LockSvg,
   StarSvg,
-  LockedTreasureSvg,
-  LockedTrophySvg,
-  UpArrowSvg,
-  ActiveTreasureSvg,
-  ActiveTrophySvg,
-  ActiveDumbbellSvg,
+  GuidebookSvg,
 } from "~/components/Svgs";
 import { TopBar } from "~/components/TopBar";
 import { BottomBar } from "~/components/BottomBar";
@@ -45,6 +29,12 @@ interface Unit {
   backgroundColor?: string;
   borderColor?: string;
   textColor?: string;
+  tiles: Array<{
+    questionId: string;
+    type: string;
+    description: string;
+    exp: number;
+  }>;
 }
 
 interface Question {
@@ -53,11 +43,7 @@ interface Question {
   body: string;
   exp: number;
   unit_id: string;
-  options?: Array<{ body: string; isCorrect: boolean }>;
-  expectedAnswer?: string;
 }
-
-type TileStatus = "LOCKED" | "ACTIVE" | "COMPLETE";
 
 // --- Transform to tile ---
 const questionToTile = (q: Question) => ({
@@ -67,7 +53,7 @@ const questionToTile = (q: Question) => ({
   exp: q.exp,
 });
 
-const mapQuestionsToUnits = (units: Unit[], questions: Question[]) =>
+const mapQuestionsToUnits = (units: Omit<Unit, "tiles">[], questions: Question[]): Unit[] =>
   units.map((u) => ({
     ...u,
     tiles: questions
@@ -76,18 +62,17 @@ const mapQuestionsToUnits = (units: Unit[], questions: Question[]) =>
   }));
 
 // --- Compute status based on backend progress ---
+type TileStatus = "LOCKED" | "ACTIVE" | "COMPLETE";
+
 const tileStatus = (
   tile: { questionId: string },
   completed: string[],
   unitTiles: { questionId: string }[]
 ): TileStatus => {
   if (completed.includes(tile.questionId)) return "COMPLETE";
-  const firstUncompleted = unitTiles.find(
-    (t) => !completed.includes(t.questionId)
-  );
-  return firstUncompleted?.questionId === tile.questionId
-    ? "ACTIVE"
-    : "LOCKED";
+  // First uncompleted question in this unit
+  const firstUncompleted = unitTiles.find((t) => !completed.includes(t.questionId));
+  return firstUncompleted?.questionId === tile.questionId ? "ACTIVE" : "LOCKED";
 };
 
 // --- Render one unit ---
@@ -95,7 +80,7 @@ const UnitSection = ({
   unit,
   completed,
 }: {
-  unit: Unit & { tiles: { questionId: string; type: string; description: string; exp: number }[] };
+  unit: Unit;
   completed: string[];
 }) => {
   const router = useRouter();
@@ -109,8 +94,8 @@ const UnitSection = ({
   }, []);
 
   return (
-    <section>
-      <article className={["max-w-2xl text-white sm:rounded-xl", unit.backgroundColor || "bg-[#58cc02]"].join(" ")}>  
+    <section className="mb-12">
+      <article className={["max-w-2xl text-white sm:rounded-xl", unit.backgroundColor || "bg-[#58cc02]"].join(" ")}>
         <header className="flex items-center justify-between p-4">
           <div>
             <h2 className="text-2xl font-bold">Unidad {unit.level}</h2>
@@ -126,16 +111,12 @@ const UnitSection = ({
         </header>
       </article>
 
-      <div className="relative mb-8 flex flex-col items-center gap-4">
+      <div className="relative flex flex-col items-center gap-4">
         {unit.tiles.map((tile, i) => {
           const status = tileStatus(tile, completed, unit.tiles);
           return (
             <Fragment key={tile.questionId}>
-              <div
-                className={[
-                  "relative -mb-4 h-[93px] w-[98px]",
-                ].join(" ")}
-              >
+              <div className="relative -mb-4 h-[93px] w-[98px]">
                 <button
                   onClick={() => router.push(`/lesson?questionId=${tile.questionId}`)}
                   disabled={status !== "ACTIVE"}
@@ -148,16 +129,15 @@ const UnitSection = ({
                       : "border-gray-300 bg-gray-200",
                   ].join(" ")}
                 >
-                  {(() => {
-                    switch (status) {
-                      case "COMPLETE":
-                        return <CheckmarkSvg />;
-                      case "ACTIVE":
-                        return tile.type === "book" ? <ActiveBookSvg /> : <StarSvg />;
-                      default:
-                        return tile.type === "book" ? <LockedBookSvg /> : <LockSvg />;
-                    }
-                  })()}
+                  {status === "COMPLETE" ? (
+                    <CheckmarkSvg />
+                  ) : status === "ACTIVE" ? (
+                    tile.type === "book" ? <ActiveBookSvg /> : <StarSvg />
+                  ) : tile.type === "book" ? (
+                    <LockedBookSvg />
+                  ) : (
+                    <LockSvg />
+                  )}
                 </button>
               </div>
             </Fragment>
@@ -171,6 +151,13 @@ const UnitSection = ({
 // --- Main page ---
 const Learn: NextPage = () => {
   const { loginScreenState, setLoginScreenState } = useLoginScreen();
+  const [scrollY, setScrollY] = useState(0);
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const unitsData = useUnits();
   const questionsData = useQuestions();
   const completed = useCompletedQuestions();
@@ -187,13 +174,17 @@ const Learn: NextPage = () => {
       <TopBar backgroundColor="bg-[#58cc02]" borderColor="border-[#46a302]" />
       <LeftBar selectedTab="Learn" />
 
-      <main className="pt-14 md:ml-24 lg:ml-64 p-6">
-        {sortedUnits.map((unit) => (
-          <UnitSection key={unit._id} unit={unit} completed={completed} />
-        ))}
-      </main>
+      <div className="flex justify-center gap-6 pt-14 p-6">
+        <div className="w-full max-w-2xl">
+          {sortedUnits.map((unit) => (
+            <UnitSection key={unit._id} unit={unit} completed={completed} />
+          ))}
+          {/* espacio extra al final para permitir scroll completo */}
+          <div className="h-32" />
+        </div>
+        <RightBar />
+      </div>
 
-      <RightBar />
       <BottomBar selectedTab="Learn" />
       <LoginScreen loginScreenState={loginScreenState} setLoginScreenState={setLoginScreenState} />
     </>
