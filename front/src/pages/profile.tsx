@@ -1,4 +1,3 @@
-// pages/profile.tsx
 import { type NextPage } from "next";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -40,7 +39,7 @@ const useUserProfile = (): UserProfile | null => {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     })
       .then((res) => {
@@ -48,7 +47,6 @@ const useUserProfile = (): UserProfile | null => {
         return res.json();
       })
       .then((data) => {
-        // Ajusta según el shape de tu respuesta
         setProfile({
           userId: data.userId,
           DNI: data.DNI,
@@ -118,7 +116,7 @@ const ChangePasswordSection = () => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         currentPassword,
@@ -174,7 +172,6 @@ const ChangePasswordSection = () => {
   );
 };
 
-// SVG de ejemplo para “time joined”
 const ProfileTimeJoinedSvg = () => (
   <svg width="24" height="24">
     <circle cx="12" cy="12" r="10" fill="#888" />
@@ -189,7 +186,6 @@ const Profile: NextPage = () => {
   const router = useRouter();
   const profile = useUserProfile();
 
-  // Si no está logueado lo mandamos al login
   const loggedIn = useBoundStore((x) => x.loggedIn);
   useEffect(() => {
     if (!loggedIn) router.push("/");
@@ -204,16 +200,16 @@ const Profile: NextPage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    // Hacer el contenedor scrollable y agregar padding-bottom para móviles
+    <div className="min-h-screen overflow-y-auto">
       <TopBar backgroundColor="bg-white" borderColor="border-gray-200" />
       <LeftBar selectedTab="Profile" />
 
-      <main className="pt-14 md:ml-24 lg:ml-64 p-5 max-w-4xl mx-auto space-y-8">
+      <main className="pt-14 md:ml-24 lg:ml-64 p-5 pb-24 max-w-4xl mx-auto space-y-8">
         <ProfileTopSection profile={profile} />
         <ProfileStatsSection exp={profile.exp} />
         <ChangePasswordSection />
 
-        {/* — Sección de administración solo para admins — */}
         {profile.role === "admin" && (
           <section className="mt-12 border-t pt-6 space-y-4">
             <h2 className="text-2xl font-bold">Administración</h2>

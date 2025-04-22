@@ -7,10 +7,10 @@ const MyApp: AppType = ({ Component, pageProps }) => {
   return (
     <>
       <Head>
-        <title>React Duolingo Clone</title>
+        <title>Taller resolución de problemas UNLu</title>
         <meta
           name="description"
-          content="Duolingo web app clone written with React"
+          content="Taller de resolución de problemas, de la licenciatura en sistemas de información de la universidad nacional de Luján"
         />
         <link rel="icon" href="/favicon.ico" />
         <meta name="theme-color" content="#0A0" />
