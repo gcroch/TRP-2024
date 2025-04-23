@@ -22,7 +22,7 @@ const UsersAdmin: NextPage = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/users", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
       headers: { Authorization:`Bearer ${token}` }
     })
       .then(r => r.json())
@@ -38,7 +38,7 @@ const UsersAdmin: NextPage = () => {
 
   const handleCreate = async (e:FormEvent) => {
     e.preventDefault();
-    await fetch("http://127.0.0.1:5000/register", {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/register`, {
       method:"POST",
       headers:{
         "Content-Type":"application/json",
@@ -46,7 +46,7 @@ const UsersAdmin: NextPage = () => {
       },
       body: JSON.stringify({ DNI, name, lastname, email })
     });
-    const updated = await fetch("http://127.0.0.1:5000/users", {
+    const updated = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
       headers:{ Authorization:`Bearer ${token}` }
     }).then(r=>r.json());
     setUsers(updated);

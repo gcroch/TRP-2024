@@ -31,11 +31,11 @@ const QuestionsAdmin: NextPage = () => {
   useEffect(() => {
     if (!token) return;
 
-    fetch("http://127.0.0.1:5000/questions", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(r => r.json()).then(setQuestions);
 
-    fetch("http://127.0.0.1:5000/units", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(r => r.json()).then(setUnits);
   }, [token]);
@@ -49,7 +49,7 @@ const QuestionsAdmin: NextPage = () => {
       payload.expectedAnswer = expectedAnswer;
     }
 
-    const res = await fetch("http://127.0.0.1:5000/questions", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -59,7 +59,7 @@ const QuestionsAdmin: NextPage = () => {
     });
 
     if (res.ok) {
-      const updated = await fetch("http://127.0.0.1:5000/questions", {
+      const updated = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(r => r.json());
       setQuestions(updated);

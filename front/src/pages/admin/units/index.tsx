@@ -19,7 +19,7 @@ const UnitsAdmin: NextPage = () => {
 
   // 1) Carga inicial
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/units", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -30,7 +30,7 @@ const UnitsAdmin: NextPage = () => {
   // 2) Crear unidad
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    await fetch("http://127.0.0.1:5000/units", {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -39,7 +39,7 @@ const UnitsAdmin: NextPage = () => {
       body: JSON.stringify({ title, level }),
     });
     // Recarga la lista
-    const refreshed = await fetch("http://127.0.0.1:5000/units", {
+    const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       headers: { Authorization: `Bearer ${token}` },
     }).then(r => r.json());
     setUnits(refreshed);

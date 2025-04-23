@@ -34,7 +34,7 @@ const EditUser: NextPage = () => {
 
     setId(queryId);
 
-    fetch(`http://127.0.0.1:5000/users/${queryId}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${queryId}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
     })
       .then(r => r.json())
@@ -52,7 +52,7 @@ const EditUser: NextPage = () => {
     e.preventDefault();
     if (!id || !token) return;
 
-    await fetch(`http://127.0.0.1:5000/users/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`, {
       method:"PUT",
       headers:{
         "Content-Type":"application/json",
@@ -68,7 +68,7 @@ const EditUser: NextPage = () => {
     const confirmed = confirm("¿Estás seguro de que deseas eliminar este usuario?");
     if (!confirmed) return;
 
-    await fetch(`http://127.0.0.1:5000/users/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     });

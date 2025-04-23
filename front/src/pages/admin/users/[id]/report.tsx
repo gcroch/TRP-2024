@@ -18,7 +18,7 @@ const UserReport = () => {
     if (!router.isReady || !id) return;
     console.log("Fetching report for ID:", id);
 
-    fetch(`http://127.0.0.1:5000/users/report?user_id=${id}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/report?user_id=${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())

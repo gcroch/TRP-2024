@@ -14,7 +14,7 @@ const EditUnit: NextPage = () => {
   // 1) Cargar datos de la unidad
   useEffect(() => {
     if (!id) return;
-    fetch(`http://127.0.0.1:5000/units/${id}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/units/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -28,7 +28,7 @@ const EditUnit: NextPage = () => {
   // 2) Guardar cambios
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    await fetch(`http://127.0.0.1:5000/units/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -46,7 +46,7 @@ const EditUnit: NextPage = () => {
       "¿Seguro que quieres continuar?";
     if (!confirm(warning)) return;
   
-    await fetch(`http://127.0.0.1:5000/units/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

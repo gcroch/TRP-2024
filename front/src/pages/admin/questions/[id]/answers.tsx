@@ -30,8 +30,8 @@ const QuestionAnswers = () => {
   useEffect(() => {
     if (!router.isReady || !id) return;
 
-    // Fetch answers
-    fetch(`http://127.0.0.1:5000/answers?question_id=${id}`, {
+    // Fetch answers `${process.env.NEXT_PUBLIC_API_URL}`
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/answers?question_id=${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())
@@ -43,7 +43,7 @@ const QuestionAnswers = () => {
 
         // Fetch all users in parallel
         const userFetches = userIds.map(userId =>
-          fetch(`http://127.0.0.1:5000/users/${userId}`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`, {
             headers: { Authorization: `Bearer ${token}` },
           }).then(res => res.json())
         );
@@ -57,7 +57,7 @@ const QuestionAnswers = () => {
       });
 
     // Fetch question data (to get options)
-    fetch(`http://127.0.0.1:5000/questions/${id}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())

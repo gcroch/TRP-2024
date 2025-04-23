@@ -50,8 +50,8 @@ const EditQuestion: NextPage = () => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`
     };
-    // pregunta
-    fetch(`http://127.0.0.1:5000/questions/${id}`, { headers })
+    // pregunta `${process.env.NEXT_PUBLIC_API_URL}`
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${id}`, { headers })
       .then(r => r.json())
       .then((q: Question) => {
         setType(q.type);
@@ -66,7 +66,7 @@ const EditQuestion: NextPage = () => {
         }
       });
     // unidades para el select
-    fetch("http://127.0.0.1:5000/units", { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, { headers })
       .then(r => r.json())
       .then(setUnits);
   }, [id, token]);
@@ -85,7 +85,7 @@ const EditQuestion: NextPage = () => {
     } else {
       payload.expectedAnswer = expectedAnswer;
     }
-    await fetch(`http://127.0.0.1:5000/questions/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -99,7 +99,7 @@ const EditQuestion: NextPage = () => {
   // 3) eliminar
   const handleDelete = async () => {
     if (!confirm("¿Seguro que quieres eliminar esta pregunta?")) return;
-    await fetch(`http://127.0.0.1:5000/questions/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     });
