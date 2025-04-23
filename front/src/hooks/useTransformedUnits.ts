@@ -29,7 +29,7 @@ export const useTransformedUnits = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/units");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`);
         const apiUnits = await res.json();
         
         const transformed = apiUnits.map((apiUnit: any, index: number) => ({

@@ -6,7 +6,7 @@ export const useQuestions = () => {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/questions");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`);
         if (!res.ok) {
           throw new Error("Error al obtener preguntas");
         }

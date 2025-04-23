@@ -18,7 +18,7 @@ export const useLeaderboardUsers = (): User[] => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:5000/users");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`);
         const data = (await res.json()) as any[];
 
         // Procesamos los usuarios del backend:

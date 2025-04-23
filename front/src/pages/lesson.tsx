@@ -47,7 +47,7 @@ const Lesson: NextPage = () => {
 
     const fetchQuestion = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:5000/questions/${questionId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${questionId}`);
         if (!res.ok) {
           throw new Error("Error fetching question data");
         }
@@ -104,7 +104,7 @@ const Lesson: NextPage = () => {
       }
       console.log("Enviando payload:", payload);
 
-      const res = await fetch("http://127.0.0.1:5000/answers", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/answers`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

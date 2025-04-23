@@ -35,7 +35,7 @@ const useUserProfile = (): UserProfile | null => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    fetch("http://127.0.0.1:5000/profile", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -112,7 +112,7 @@ const ChangePasswordSection = () => {
 
   const handleChangePassword = async () => {
     if (!token) return;
-    const res = await fetch("http://127.0.0.1:5000/profile", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
