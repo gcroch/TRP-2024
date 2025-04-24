@@ -320,17 +320,74 @@ def get_user(user_id):
 @users_bp.route('/users/<id>', methods=['PUT'])
 #@jwt_required()
 def update_user(id):
-    data = request.get_json()
-    # Lógica para actualizar usuario
-    # Por ejemplo con MongoDB:
-    updated = {
-        "DNI": data["DNI"],
-        "name": data["name"],
-        "lastname": data["lastname"],
-        "email": data["email"],
-        "role": data["role"]
-    }
-    result = mongo.db.users.update_one({"_id": ObjectId(id)}, {"$set": updated})
-    if result.modified_count:
-        return jsonify({"message": "Usuario actualizado"}), 200
-    return jsonify({"message": "Usuario no encontrado o sin cambios"}), 404
+    """
+    Actualiza campos de un usuario dado su _id de MongoDB,
+    incluyendo opcionalmente el cambio de contraseña sin requerir la contraseña actual.
+    Envía un correo notificando qué campos cambiaron (sin revelar la nueva contraseña).
+    """
+    data = request.get_json() or {}
+
+    # Buscar usuario existente por ObjectId
+    try:
+        user = mongo.db.users.find_one({"_id": ObjectId(id)})
+    except Exception:
+        return jsonify({"error": "ID de usuario inválido"}), 400
+
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
+    # Campos permitidos a actualizar y comparación
+    updatable_fields = ["DNI", "name", "lastname", "email", "role"]
+    updates = {}
+    changed_fields = []
+
+    for field in updatable_fields:
+        if field in data and data[field] != user.get(field):
+            updates[field] = data[field]
+            changed_fields.append(field)
+
+    # Manejo de cambio de contraseña si se proporciona nueva contraseña
+    if "password" in data:
+        # Hashear y preparar nueva contraseña
+        updates["password"] = generate_password_hash(data["password"])
+        # Notificar que contraseña cambió, sin revelar valor
+        changed_fields.append("password")
+
+    # Si no hay cambios, devolvemos sin modificar
+    if not updates:
+        return jsonify({"message": "Usuario sin cambios"}), 200
+
+    # Aplicar actualización en MongoDB
+    mongo.db.users.update_one({"_id": ObjectId(id)}, {"$set": updates})
+
+    # Preparar y enviar correo de notificación
+    # Excluir 'password' de la lista de campos mostrados
+    email_fields = [f for f in changed_fields if f != "password"]
+    user_after = mongo.db.users.find_one({"_id": ObjectId(id)})
+    if user_after:
+        email = user_after.get("email")
+        name = user_after.get("name")
+        lastname = user_after.get("lastname")
+
+        # Crear mensaje usando la clase Message importada
+        msg = Message(
+            subject="Actualización de usuario",
+            recipients=[email]
+        )
+
+        # Cuerpo del correo
+        text_body = f"Hola {name} {lastname},\n\n" \
+                    f"Se han actualizado los siguientes campos de tu cuenta: {', '.join(email_fields + ['contraseña'] if 'password' in changed_fields else email_fields)}.\n" \
+                    "Si no reconoces estos cambios, contáctanos de inmediato.\n\nSaludos."
+        html_body = f"<p>Hola {name} {lastname},</p>" \
+                    f"<p>Se han actualizado los siguientes campos de tu cuenta: <strong>{', '.join(email_fields + ['contraseña'] if 'password' in changed_fields else email_fields)}</strong>.</p>" \
+                    "<p>Si no reconoces estos cambios, contáctanos de inmediato.</p>" \
+                    "<p>Saludos.</p>"
+
+        msg.body = text_body
+        msg.html = html_body
+        # Enviar usando la extensión mail
+        mail = current_app.extensions['mail']
+        mail.send(msg)
+
+    return jsonify({"message": "Usuario actualizado exitosamente"}), 200

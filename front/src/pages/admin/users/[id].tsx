@@ -20,6 +20,7 @@ const EditUser: NextPage = () => {
   const [lastname, setLastname] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"user"|"admin">("user");
+  const [password, setPassword] = useState("");
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,13 +53,16 @@ const EditUser: NextPage = () => {
     e.preventDefault();
     if (!id || !token) return;
 
+    const payload: any = { DNI, name, lastname, email, role };
+    if (password) payload.password = password;
+
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`, {
       method:"PUT",
       headers:{
         "Content-Type":"application/json",
         Authorization:`Bearer ${token}`
       },
-      body:JSON.stringify({ DNI, name, lastname, email, role })
+      body:JSON.stringify(payload)
     });
     router.push("/admin/users");
   };
@@ -108,6 +112,11 @@ const EditUser: NextPage = () => {
             <option value="admin">Administrador</option>
           </select>
         </div>
+        <input
+          placeholder="Nueva contraseña" type="password" value={password}
+          onChange={e=>setPassword(e.target.value)}
+          className="border px-2 py-1 w-full" 
+        />
         <button className="bg-blue-500 text-white px-4 py-2 rounded">
           Guardar
         </button>
