@@ -2,9 +2,10 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/learn": "pages/learn.js",
+  "/profile": "pages/profile.js",
+  "/lesson": "pages/lesson.js",
   "/admin/questions": "pages/admin/questions.js",
   "/admin/questions/[id]": "pages/admin/questions/[id].js",
-  "/": "pages/index.js",
-  "/learn": "pages/learn.js",
-  "/profile": "pages/profile.js"
+  "/admin/questions/[id]/answers": "pages/admin/questions/[id]/answers.js"
 }

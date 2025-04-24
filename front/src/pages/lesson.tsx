@@ -16,6 +16,7 @@ interface Question {
     isCorrect: boolean;
   }>;
   expectedAnswer?: string;
+  imagePath?: string;
 }
 
 interface AnswerRequest {
@@ -134,6 +135,15 @@ const Lesson: NextPage = () => {
   return (
     <div className="p-5">
       <h1 className="text-xl font-bold mb-4">Pregunta</h1>
+      {question.imagePath && (
+        <div className="mb-4">
+          <img
+            src={`${process.env.NEXT_PUBLIC_API_URL}/back/img/${question.imagePath}`}
+            alt={question.imagePath}
+            className="max-w-full h-auto rounded border border-gray-200"
+          />
+        </div>
+      )}
       <p className="mb-6 font-semibold">{question.body}</p>
 
       {question.type === "Choice" && question.options && (
