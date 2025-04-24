@@ -24,19 +24,42 @@ def allowed_file(filename):
 @cross_origin()
 def create_question():
     data = request.get_json() or {}
-    # … validaciones como antes …
+
+    # Validaciones mínimas
+    required_fields = ["type", "body", "exp", "unit_id"]
+    for field in required_fields:
+        if field not in data:
+            return jsonify({"error": f"Falta el campo requerido: {field}"}), 400
+
+    try:
+        unit_id = ObjectId(data["unit_id"])
+    except:
+        return jsonify({"error": "unit_id inválido"}), 400
+
     question = {
         "type": data["type"],
         "body": data["body"],
         "exp": data["exp"],
-        "unit_id": ObjectId(data["unit_id"])
+        "unit_id": unit_id
     }
-    # Campo opcional imagePath :contentReference[oaicite:3]{index=3}
+
     if data.get("imagePath"):
         question["imagePath"] = data["imagePath"]
-    # … resto de OpenEntry/Choice …
+
+    # Campos específicos según tipo de pregunta
+    if data["type"] == "Choice":
+        if "options" not in data or not isinstance(data["options"], list):
+            return jsonify({"error": "Faltan las opciones para pregunta tipo Choice"}), 400
+        question["options"] = data["options"]
+    elif data["type"] == "OpenEntry":
+        if "expectedAnswer" not in data:
+            return jsonify({"error": "Falta la respuesta esperada para pregunta tipo OpenEntry"}), 400
+        question["expectedAnswer"] = data["expectedAnswer"]
+    else:
+        return jsonify({"error": "Tipo de pregunta no válido"}), 400
+
     res = mongo.db.questions.insert_one(question)
-    return jsonify({"message":"Pregunta creada","question_id":str(res.inserted_id)}), 201
+    return jsonify({"message": "Pregunta creada", "question_id": str(res.inserted_id)}), 201
 
 @questions_bp.route('/questions', methods=['GET'])
 @cross_origin()

@@ -26,6 +26,7 @@ const QuestionsAdmin: NextPage = () => {
   const [unitId, setUnitId] = useState("");
   const [options, setOptions] = useState([{ body: "", isCorrect: false }]);
   const [expectedAnswer, setExpectedAnswer] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
@@ -40,15 +41,37 @@ const QuestionsAdmin: NextPage = () => {
     }).then(r => r.json()).then(setUnits);
   }, [token]);
 
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    const formData = new FormData();
+    formData.append("image", imageFile);
+  
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+  
+    if (!res.ok) {
+      console.error("Error al subir la imagen");
+      return null;
+    }
+  
+    const data = await res.json();
+    const parts = (data.imageUrl as string).split("/");
+    return parts.pop()!; // nombre del archivo
+  };
+
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+  
+    // Paso 1: Crear la pregunta (sin imagen)
     const payload: any = { type, body, exp, unit_id: unitId };
-    if (type === "Choice") {
-      payload.options = options;
-    } else {
-      payload.expectedAnswer = expectedAnswer;
-    }
-
+    if (type === "Choice") payload.options = options;
+    else payload.expectedAnswer = expectedAnswer;
+  
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
       method: "POST",
       headers: {
@@ -57,22 +80,52 @@ const QuestionsAdmin: NextPage = () => {
       },
       body: JSON.stringify(payload)
     });
-
-    if (res.ok) {
-      const updated = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(r => r.json());
-      setQuestions(updated);
-      setBody("");
-      setExp(0);
-      setUnitId("");
-      setOptions([{ body: "", isCorrect: false }]);
-      setExpectedAnswer("");
-    } else {
+  
+    if (!res.ok) {
       const error = await res.json();
       alert("Error: " + error.message);
+      return;
     }
+  
+    const { question_id } = await res.json();
+  
+    // Paso 2: Subir imagen si existe
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+  
+      const uploadRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/questions/${question_id}/image`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData
+        }
+      );
+  
+      if (!uploadRes.ok) {
+        const uploadErr = await uploadRes.json();
+        console.error("Error subiendo imagen:", uploadErr);
+        alert("Pregunta creada, pero error subiendo imagen.");
+      }
+    }
+  
+    // Limpiar estado
+    const updated = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.json());
+  
+    setQuestions(updated);
+    setBody("");
+    setExp(0);
+    setUnitId("");
+    setOptions([{ body: "", isCorrect: false }]);
+    setExpectedAnswer("");
+    setImageFile(null);
   };
+  
 
   return (
     <div className="p-6">
@@ -127,6 +180,15 @@ const QuestionsAdmin: NextPage = () => {
             onChange={e => setBody(e.target.value)}
             className="border px-2 py-1 w-full"
             required
+          />
+        </div>
+        <div>
+          <label className="block">Imagen (opcional)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={e => setImageFile(e.target.files?.[0] ?? null)}
+            className="border px-2 py-1"
           />
         </div>
         <div>
