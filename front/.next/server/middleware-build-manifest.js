@@ -24,15 +24,15 @@ self.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
-    "/admin/users": [
+    "/admin/questions": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/users.js"
+      "static/chunks/pages/admin/questions.js"
     ],
-    "/admin/users/[id]": [
+    "/admin/questions/[id]": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/users/[id].js"
+      "static/chunks/pages/admin/questions/[id].js"
     ],
     "/learn": [
       "static/chunks/webpack.js",
