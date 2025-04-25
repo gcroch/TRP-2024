@@ -411,7 +411,10 @@ def upload_users():
     text = file.stream.read().decode('utf-8')
     stream = io.StringIO(text)
     # Si tu CSV NO trae cabecera, pásale fieldnames; si trae cabecera, quita fieldnames
-    reader = csv.DictReader(stream, fieldnames=['DNI','name','lastname','email'])
+    reader = csv.DictReader(stream,
+                            fieldnames=['DNI','clave','lastname','name','email'],
+                            delimiter=';'
+                            )
 
     created = 0
     skipped = 0
