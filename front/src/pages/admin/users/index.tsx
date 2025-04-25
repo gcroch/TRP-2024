@@ -19,6 +19,7 @@ const UsersAdmin: NextPage = () => {
   const [name, setName] = useState("");
   const [lastname, setLastname] = useState("");
   const [email, setEmail] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -35,6 +36,45 @@ const UsersAdmin: NextPage = () => {
         setUsers(formatted);
       });
   }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+       if (e.target.files?.[0]) setCsvFile(e.target.files[0]);
+  };
+
+  const handleBulkUpload = async () => {
+    if (!csvFile) return alert("Seleccioná un archivo CSV primero");
+  
+    const form = new FormData();
+    form.append("file", csvFile);
+  
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/users/upload`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      }
+    );
+  
+    const result = await res.json();
+  
+    if (res.status === 401) {
+      // token expirado → obligar a re-login
+      alert(result.msg || "No autorizado, por favor volvé a iniciar sesión");
+      router.push("/login");
+      return;
+    }
+  
+    if (!res.ok) {
+      // si el backend devolvió { error: "..."} o { msg: "..." }
+      alert("Error al importar: " + (result.error || result.msg));
+      return;
+    }
+  
+    alert(`Importados: ${result.created} usuarios.\nOmitidos: ${result.skipped}`);
+    // refrescar la lista...
+  };
+  
 
   const handleCreate = async (e:FormEvent) => {
     e.preventDefault();
@@ -112,6 +152,23 @@ const UsersAdmin: NextPage = () => {
           Ver Reporte Global
         </button>
       </form>
+
+      <div className="mt-6">
+       <label className="block mb-2">Importar CSV de Usuarios</label>
+       <input
+         type="file"
+         accept=".csv"
+         onChange={handleFileChange}
+         className="border p-2 mb-2"
+       />
+       <button
+         onClick={handleBulkUpload}
+         className="bg-indigo-600 text-white px-4 py-2 rounded ml-2"
+       >
+         Importar CSV
+       </button>
+     </div>
+
     </div>
   );
 };

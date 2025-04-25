@@ -1,3 +1,4 @@
+import io, csv
 from flask import Blueprint, request, jsonify,current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
@@ -5,7 +6,9 @@ from extensions import mongo
 from utils import generate_random_password
 from flask_mail import Mail, Message
 from bson import ObjectId
+from werkzeug.utils import secure_filename
 
+mail=Mail()
 
 users_bp = Blueprint('users', __name__)
 
@@ -391,3 +394,60 @@ def update_user(id):
         mail.send(msg)
 
     return jsonify({"message": "Usuario actualizado exitosamente"}), 200
+
+
+@users_bp.route('/users/upload', methods=['POST'])
+#@jwt_required()
+def upload_users():
+    if 'file' not in request.files:
+        return jsonify({"error": "No se envió ningún archivo"}), 400
+
+    file = request.files['file']
+    fname = secure_filename(file.filename)
+    if not fname.lower().endswith('.csv'):
+        return jsonify({"error": "Sólo CSV permitido"}), 400
+
+    # Leemos todo el CSV en memoria
+    text = file.stream.read().decode('utf-8')
+    stream = io.StringIO(text)
+    # Si tu CSV NO trae cabecera, pásale fieldnames; si trae cabecera, quita fieldnames
+    reader = csv.DictReader(stream, fieldnames=['DNI','name','lastname','email'])
+
+    created = 0
+    skipped = 0
+
+    for row in reader:
+        # usamos .get para no petar si la clave no existe
+        dni       = row.get('DNI', '').strip()
+        name      = row.get('name', '').strip()
+        lastname  = row.get('lastname', '').strip()
+        email     = row.get('email', '').strip()
+
+        if not (dni and name and email):
+            # fila incompleta → la saltamos
+            continue
+
+        if mongo.db.users.find_one({"DNI": dni}):
+            skipped += 1
+            continue
+
+        pwd    = generate_random_password(12)
+        hashed = generate_password_hash(pwd)
+
+        mongo.db.users.insert_one({
+            "DNI":        dni,
+            "name":       name,
+            "lastname":   lastname,
+            "email":      email,
+            "password":   hashed,
+            "role":       "user"
+        })
+
+        # enviamos mail con credenciales
+        msg = Message("Tus credenciales", recipients=[email])
+        msg.body = f"Hola {name},\n\nDNI: {dni}\nPassword: {pwd}\n"
+        mail.send(msg)
+
+        created += 1
+
+    return jsonify({"created": created, "skipped": skipped}), 200
