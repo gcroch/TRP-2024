@@ -253,6 +253,15 @@ const EditQuestion: NextPage = () => {
           >Ver respuestas</button>
         </div>
       </form>
+
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/admin/questions")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a adm preguntas
+        </button>
+      </div>
     </div>
   );
 };

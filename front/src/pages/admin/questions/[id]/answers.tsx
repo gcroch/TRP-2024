@@ -73,6 +73,15 @@ const QuestionAnswers = () => {
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-center">Respuestas a la Pregunta</h1>
 
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/admin/questions")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a adm preguntas
+        </button>
+      </div>
+
       <div className="space-y-4">
         {answers.map((answer, idx) => {
           const user = users[answer.user_id];

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { withAuth } from "~/components/withAuth";
 
 interface ReportEntry {
@@ -13,6 +14,7 @@ interface UserReport {
 }
 
 const UserReportPage = () => {
+  const router = useRouter();
   const [reports, setReports] = useState<UserReport[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,7 +84,14 @@ const UserReportPage = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-center">Reporte de Respuestas de Todos los Usuarios</h1>
-
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/admin/users")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a adm usuarios
+        </button>
+      </div>
       {loading ? (
         <p className="text-center text-gray-500">Cargando reporte...</p>
       ) : reports.length === 0 ? (

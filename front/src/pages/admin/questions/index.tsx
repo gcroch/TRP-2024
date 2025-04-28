@@ -273,6 +273,15 @@ const QuestionsAdmin: NextPage = () => {
           Crear Pregunta
         </button>
       </form>
+
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/profile")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a Mi Perfil
+        </button>
+      </div>
     </div>
   );
 };

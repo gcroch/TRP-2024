@@ -138,6 +138,15 @@ const EditUser: NextPage = () => {
           Ver Respuestas del Usuario
         </button>
       </form>
+
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/admin/users")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a adm usuarios
+        </button>
+      </div>
     </div>
   );
 };

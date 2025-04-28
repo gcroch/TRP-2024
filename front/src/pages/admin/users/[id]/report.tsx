@@ -61,6 +61,15 @@ const UserReport = () => {
       <h1 className="text-3xl font-bold mb-2 text-center">Reporte de Respuestas</h1>
       {userName && <h2 className="text-xl text-gray-600 mb-6 text-center">Usuario: {userName}</h2>}
 
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/admin/users")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a adm usuarios
+        </button>
+      </div>
+
       <div className="space-y-4">
         {report.map((r, i) => (
           <div key={i} className="bg-white shadow rounded-lg p-4 border border-gray-200">

@@ -92,6 +92,15 @@ const EditUnit: NextPage = () => {
           </button>
         </div>
       </form>
+
+      <div className="mb-4">
+        <button
+          onClick={() => router.push("/admin/units")}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+        >
+          Volver a adm unidades
+        </button>
+      </div>
     </div>
   );
 };
