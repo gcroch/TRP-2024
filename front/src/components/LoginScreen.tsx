@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useBoundStore } from "~/hooks/useBoundStore";
 import { useRouter } from "next/router";
 import { CloseSvg } from "./Svgs";
@@ -33,7 +33,6 @@ export const LoginScreen = ({
 
   const [dni, setDni] = useState("");
   const [password, setPassword] = useState("");
-  // Estado para mensajes de error
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,9 +43,7 @@ export const LoginScreen = ({
 
   const logInAndSetUserProperties = async () => {
     try {
-      // Limpiar error previo
       setError(null);
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/login`,
         {
@@ -57,7 +54,6 @@ export const LoginScreen = ({
       );
 
       if (!response.ok) {
-        // Mostrar mensaje de error si credenciales incorrectas
         setError("Usuario o contraseña incorrectos");
         return;
       }
@@ -105,6 +101,12 @@ export const LoginScreen = ({
     if (error) setError(null);
   };
 
+  // New submit handler for the form
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    logInAndSetUserProperties();
+  };
+
   return (
     <article
       className={[
@@ -125,7 +127,7 @@ export const LoginScreen = ({
         </button>
       </header>
       <div className="flex grow items-center justify-center">
-        <div className="flex w-full flex-col gap-5 sm:w-96">
+        <form onSubmit={handleSubmit} className="flex w-full flex-col gap-5 sm:w-96">
           <h2 className="text-center text-2xl font-bold text-gray-800">
             Iniciar sesión
           </h2>
@@ -152,12 +154,12 @@ export const LoginScreen = ({
             )}
           </div>
           <button
+            type="submit"
             className="rounded-2xl border-b-4 border-blue-500 bg-blue-400 py-3 font-bold uppercase text-white transition hover:brightness-110"
-            onClick={logInAndSetUserProperties}
           >
             Aceptar
           </button>
-        </div>
+        </form>
       </div>
     </article>
   );
