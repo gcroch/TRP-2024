@@ -6,11 +6,15 @@ import { LanguageHeader } from "~/components/LanguageHeader";
 import { useLoginScreen, LoginScreen } from "~/components/LoginScreen";
 import _bgSnow from "../../public/bg-snow.svg";
 import type { StaticImageData } from "next/image";
+import { useLeaderboardUsers } from "~/hooks/useLeaderboard";
+import { LeaderboardProfile } from "~/components/LeaderboardProfile";
 
 const bgSnow = _bgSnow as StaticImageData;
 
 const Home: NextPage = () => {
   const { loginScreenState, setLoginScreenState } = useLoginScreen();
+  const leaderboardUsers = useLeaderboardUsers();
+  const top10 = leaderboardUsers.slice(0, 10);
   return (
     <main
       className="flex min-h-screen flex-col items-center justify-center bg-[#235390] text-white"
@@ -34,6 +38,24 @@ const Home: NextPage = () => {
           </div>
         </div>
       </div>
+      {/* Pre‑vista del Top 10 */}
+      <section className="w-full max-w-md bg-white text-black rounded-2xl p-6 shadow-md">
+        <h2 className="text-xl font-bold mb-4">Top 10 jugadores</h2>
+        {top10.length > 0 ? (
+          top10.map((u, i) => (
+            <LeaderboardProfile
+              key={u.DNI}
+              place={i + 1}
+              name={u.name}
+              lastname={u.lastname}
+              xp={u.xp}
+              isCurrentUser={u.isCurrentUser}
+            />
+          ))
+        ) : (
+          <p className="text-gray-500">Cargando ranking…</p>
+        )}
+      </section>
       <LoginScreen
         loginScreenState={loginScreenState}
         setLoginScreenState={setLoginScreenState}
