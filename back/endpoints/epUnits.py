@@ -66,3 +66,17 @@ def delete_unit(unit_id):
         return jsonify({"error": "Unidad no encontrada"}), 404
 
     return jsonify({"message": "Unidad eliminada exitosamente"}), 200
+@units_bp.route('/units/<unit_id>', methods=['GET'])
+def get_unit_by_id(unit_id):
+    try:
+        obj_id = ObjectId(unit_id)
+    except Exception:
+        return jsonify({"error": "ID inválido"}), 400
+
+    unit = mongo.db.units.find_one({"_id": obj_id})
+    if not unit:
+        return jsonify({"error": "Unidad no encontrada"}), 404
+
+    # convertir ObjectId a string
+    unit['_id'] = str(unit['_id'])
+    return jsonify(unit), 200

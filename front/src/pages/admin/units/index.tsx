@@ -15,21 +15,31 @@ const UnitsAdmin: NextPage = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [title, setTitle] = useState("");
   const [level, setLevel] = useState<number>(1);
-  const token = localStorage.getItem("token");
 
   // 1) Carga inicial
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(res => res.json())
-      .then(setUnits)
+      .then((res) => {
+        if (!res.ok) throw new Error("Error cargando unidades");
+        return res.json();
+      })
+      .then((data) => {
+        // si tu API devuelve { units: [...] } haz setUnits(data.units)
+        setUnits(data);
+      })
       .catch(console.error);
   }, []);
 
   // 2) Crear unidad
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       method: "POST",
       headers: {
@@ -38,10 +48,12 @@ const UnitsAdmin: NextPage = () => {
       },
       body: JSON.stringify({ title, level }),
     });
-    // Recarga la lista
+
+    // recarga
     const refreshed = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units`, {
       headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json());
+    }).then((r) => r.json());
+
     setUnits(refreshed);
     setTitle("");
     setLevel(1);
@@ -51,7 +63,6 @@ const UnitsAdmin: NextPage = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">ABM Unidades</h1>
 
-      {/* Listado */}
       <table className="w-full table-auto border mb-6">
         <thead>
           <tr className="bg-gray-100">
@@ -78,7 +89,6 @@ const UnitsAdmin: NextPage = () => {
         </tbody>
       </table>
 
-      {/* Formulario de creación */}
       <form onSubmit={handleCreate} className="space-y-3">
         <div>
           <label className="block">Título</label>
@@ -106,7 +116,8 @@ const UnitsAdmin: NextPage = () => {
           Crear Unidad
         </button>
       </form>
-      <div className="mb-4">
+
+      <div className="mt-4">
         <button
           onClick={() => router.push("/profile")}
           className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"

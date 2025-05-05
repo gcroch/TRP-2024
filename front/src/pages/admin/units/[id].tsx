@@ -9,25 +9,37 @@ const EditUnit: NextPage = () => {
   const { id } = router.query;
   const [title, setTitle] = useState("");
   const [level, setLevel] = useState<number>(1);
-  const token = localStorage.getItem("token");
+  const [loading, setLoading] = useState(true);
 
   // 1) Cargar datos de la unidad
   useEffect(() => {
-    if (!id) return;
+    if (!id || typeof id !== "string") return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/units/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
-      .then((u) => {
+      .then((r) => {
+        if (!r.ok) throw new Error("Unidad no encontrada");
+        return r.json();
+      })
+      .then((data) => {
+        // si tu API envía { unit: {...} }
+        const u = data.unit ?? data;
         setTitle(u.title);
         setLevel(u.level);
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [id]);
 
-  // 2) Guardar cambios
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
+    if (!id || typeof id !== "string") return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units/${id}`, {
       method: "PUT",
       headers: {
@@ -39,13 +51,15 @@ const EditUnit: NextPage = () => {
     router.push("/admin/units");
   };
 
-  // 3) Eliminar
   const handleDelete = async () => {
+    if (!id || typeof id !== "string") return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
     const warning =
-      "⚠️ Al borrar esta unidad, todas las preguntas asociadas perderán su vínculo y dejarán de mostrarse.\n\n" +
-      "¿Seguro que quieres continuar?";
+      "⚠️ Al borrar esta unidad, todas las preguntas asociadas perderán su vínculo.\n\n¿Continuar?";
     if (!confirm(warning)) return;
-  
+
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/units/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -53,12 +67,14 @@ const EditUnit: NextPage = () => {
     router.push("/admin/units");
   };
 
+  if (loading) return <p>Cargando...</p>;
+
   return (
     <div className="p-6 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-4">Editar Unidad</h1>
       <form onSubmit={handleSave} className="space-y-4">
         <div>
-          <label>Título</label>
+          <label className="block mb-1">Título</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -67,7 +83,7 @@ const EditUnit: NextPage = () => {
           />
         </div>
         <div>
-          <label>Nivel</label>
+          <label className="block mb-1">Nivel</label>
           <input
             type="number"
             value={level}
@@ -79,24 +95,23 @@ const EditUnit: NextPage = () => {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
           >
             Guardar
           </button>
           <button
             type="button"
             onClick={handleDelete}
-            className="bg-red-500 text-white px-4 py-2 rounded"
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
           >
             Eliminar
           </button>
         </div>
       </form>
-
-      <div className="mb-4">
+      <div className="mt-4">
         <button
           onClick={() => router.push("/admin/units")}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
         >
           Volver a adm unidades
         </button>
