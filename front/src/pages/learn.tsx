@@ -1,6 +1,6 @@
 import { type NextPage } from "next";
 import Link from "next/link";
-import { Fragment, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { useRouter } from "next/router";
 import { withAuth } from "~/components/withAuth";
 import { useUnits } from "~/hooks/useUnits";
@@ -31,7 +31,7 @@ interface Unit {
   textColor?: string;
   tiles: Array<{
     questionId: string;
-    type: string;
+    type: string;        // "book" o "star"
     description: string;
     exp: number;
   }>;
@@ -39,13 +39,13 @@ interface Unit {
 
 interface Question {
   _id: string;
-  type: string;
+  type: string;          // "Choice" o "OpenEntry"
   body: string;
   exp: number;
   unit_id: string;
 }
 
-// --- Transform to tile ---
+// --- Transform backend questions a tiles ---
 const questionToTile = (q: Question) => ({
   questionId: q._id,
   type: q.type === "Choice" ? "book" : "star",
@@ -53,7 +53,10 @@ const questionToTile = (q: Question) => ({
   exp: q.exp,
 });
 
-const mapQuestionsToUnits = (units: Omit<Unit, "tiles">[], questions: Question[]): Unit[] =>
+const mapQuestionsToUnits = (
+  units: Omit<Unit, "tiles">[],
+  questions: Question[]
+): Unit[] =>
   units.map((u) => ({
     ...u,
     tiles: questions
@@ -61,21 +64,7 @@ const mapQuestionsToUnits = (units: Omit<Unit, "tiles">[], questions: Question[]
       .map(questionToTile),
   }));
 
-// --- Compute status based on backend progress ---
-type TileStatus = "LOCKED" | "ACTIVE" | "COMPLETE";
-
-const tileStatus = (
-  tile: { questionId: string },
-  completed: string[],
-  unitTiles: { questionId: string }[]
-): TileStatus => {
-  if (completed.includes(tile.questionId)) return "COMPLETE";
-  // First uncompleted question in this unit
-  const firstUncompleted = unitTiles.find((t) => !completed.includes(t.questionId));
-  return firstUncompleted?.questionId === tile.questionId ? "ACTIVE" : "LOCKED";
-};
-
-// --- Render one unit ---
+// --- Render unitaria de la unidad ---
 const UnitSection = ({
   unit,
   completed,
@@ -84,18 +73,49 @@ const UnitSection = ({
   completed: string[];
 }) => {
   const router = useRouter();
-  const [selectedTile, setSelectedTile] = useState<number | null>(null);
-  const closeTooltip = useCallback(() => setSelectedTile(null), []);
 
+  // Estado para la pregunta activa elegida al azar
+  const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
+
+  // Recalcula el siguiente al azar solo cuando cambia `completed`
   useEffect(() => {
-    const onScroll = () => setSelectedTile(null);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const uncompleted = unit.tiles.filter(
+      (t) => !completed.includes(t.questionId)
+    );
+    if (uncompleted.length > 0) {
+      const idx = Math.floor(Math.random() * uncompleted.length);
+      setActiveQuestionId(uncompleted[idx].questionId);
+    } else {
+      setActiveQuestionId(null);
+    }
+  }, [completed, unit.tiles]);
+
+  // Cuántos lleva completados
+  const doneCount = unit.tiles.filter((t) =>
+    completed.includes(t.questionId)
+  ).length;
+
+  // Cuántos faltan (excluyendo el activo)
+  const total = unit.tiles.length;
+  const lockedCount =
+    activeQuestionId === null
+      ? total - doneCount // si ya terminó, todos bloqueados excepto checks
+      : total - doneCount - 1;
+
+  // Encuentra el tile activo para decidir icono
+  const activeTile = unit.tiles.find(
+    (t) => t.questionId === activeQuestionId
+  );
 
   return (
     <section className="mb-12">
-      <article className={["max-w-2xl text-white sm:rounded-xl", unit.backgroundColor || "bg-[#58cc02]"].join(" ")}>
+      {/* Header verde de la unidad */}
+      <article
+        className={[
+          "max-w-2xl text-white sm:rounded-xl",
+          unit.backgroundColor || "bg-[#58cc02]"
+        ].join(" ")}
+      >
         <header className="flex items-center justify-between p-4">
           <div>
             <h2 className="text-2xl font-bold">Unidad {unit.level}</h2>
@@ -103,7 +123,10 @@ const UnitSection = ({
           </div>
           <Link
             href={`https://duolingo.com/guidebook/${unit.level}`}
-            className={["flex items-center gap-3 p-3 rounded-2xl border-2 border-b-4 transition hover:text-gray-100", unit.borderColor || "border-[#46a302]"].join(" ")}
+            className={[
+              "flex items-center gap-3 p-3 rounded-2xl border-2 border-b-4 transition hover:text-gray-100",
+              unit.borderColor || "border-[#46a302]"
+            ].join(" ")}
           >
             <GuidebookSvg />
             <span className="sr-only">Guidebook</span>
@@ -111,47 +134,57 @@ const UnitSection = ({
         </header>
       </article>
 
-      <div className="relative flex flex-col items-center gap-4">
-        {unit.tiles.map((tile, i) => {
-          const status = tileStatus(tile, completed, unit.tiles);
-          return (
-            <Fragment key={tile.questionId}>
-              <div className="relative -mb-4 h-[93px] w-[98px]">
-                <button
-                  onClick={() => router.push(`/lesson?questionId=${tile.questionId}`)}
-                  disabled={status !== "ACTIVE"}
-                  className={[
-                    "absolute m-3 rounded-full p-4 border-b-8",
-                    status === "COMPLETE"
-                      ? "border-yellow-500 bg-yellow-400"
-                      : status === "ACTIVE"
-                      ? `${unit.borderColor || "border-[#46a302]"} ${unit.backgroundColor || "bg-[#58cc02]"}`
-                      : "border-gray-300 bg-gray-200",
-                  ].join(" ")}
-                >
-                  {status === "COMPLETE" ? (
-                    <CheckmarkSvg />
-                  ) : status === "ACTIVE" ? (
-                    tile.type === "book" ? <ActiveBookSvg /> : <StarSvg />
-                  ) : tile.type === "book" ? (
-                    <LockedBookSvg />
-                  ) : (
-                    <LockSvg />
-                  )}
-                </button>
-              </div>
-            </Fragment>
-          );
-        })}
+      {/* Nodo lineal: checks, activo, bloqueados */}
+      <div className="relative flex flex-col items-center gap-6 mt-6">
+        {/* Checks por cada completada */}
+        {Array.from({ length: doneCount }).map((_, i) => (
+          <div key={`done-${i}`} className="h-[64px] w-[64px]">
+            <button className="rounded-full p-4 border-b-8 border-yellow-500 bg-yellow-400">
+              <CheckmarkSvg />
+            </button>
+          </div>
+        ))}
+
+        {/* Nodo activo único */}
+        {activeTile && (
+          <div className="h-[64px] w-[64px]">
+            <button
+              onClick={() =>
+                router.push(`/lesson?questionId=${activeTile.questionId}`)
+              }
+              className={[
+                "rounded-full p-4 border-b-8 transition-all",
+                unit.borderColor || "border-[#46a302]",
+                unit.backgroundColor || "bg-[#58cc02]"
+              ].join(" ")}
+            >
+              {activeTile.type === "book" ? (
+                <ActiveBookSvg />
+              ) : (
+                <StarSvg />
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Candados por cada bloqueado restante */}
+        {Array.from({ length: lockedCount }).map((_, i) => (
+          <div key={`locked-${i}`} className="h-[64px] w-[64px]">
+            <button className="rounded-full p-4 border-b-8 border-gray-300 bg-gray-200">
+              <LockSvg />
+            </button>
+          </div>
+        ))}
       </div>
     </section>
   );
 };
 
-// --- Main page ---
+// --- Página principal Learn ---
 const Learn: NextPage = () => {
   const { loginScreenState, setLoginScreenState } = useLoginScreen();
   const [scrollY, setScrollY] = useState(0);
+
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
     window.addEventListener("scroll", onScroll);
@@ -179,14 +212,16 @@ const Learn: NextPage = () => {
           {sortedUnits.map((unit) => (
             <UnitSection key={unit._id} unit={unit} completed={completed} />
           ))}
-          {/* espacio extra al final para permitir scroll completo */}
           <div className="h-32" />
         </div>
         <RightBar />
       </div>
 
       <BottomBar selectedTab="Learn" />
-      <LoginScreen loginScreenState={loginScreenState} setLoginScreenState={setLoginScreenState} />
+      <LoginScreen
+        loginScreenState={loginScreenState}
+        setLoginScreenState={setLoginScreenState}
+      />
     </>
   );
 };
