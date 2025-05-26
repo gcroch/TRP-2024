@@ -133,28 +133,32 @@ const Lesson: NextPage = () => {
   }
 
   return (
-    <div className="p-5">
-      <h1 className="text-xl font-bold mb-4">Pregunta</h1>
+    <div className="p-5 max-w-4xl mx-auto text-center">
+      <h1 className="text-2xl font-bold mb-6">Pregunta</h1>
+  
       {question.imagePath && (
-        <div className="mb-4">
+        <div className="mb-6 flex justify-center">
           <img
             src={`${process.env.NEXT_PUBLIC_API_URL}/back/img/${question.imagePath}`}
             alt={question.imagePath}
-            className="max-w-full h-auto rounded border border-gray-200"
+            className="max-w-sm w-full h-auto rounded shadow border border-gray-200"
           />
         </div>
       )}
-      <p className="mb-6 font-semibold">{question.body}</p>
-
+  
+      <p className="mb-8 text-lg font-semibold">{question.body}</p>
+  
       {question.type === "Choice" && question.options && (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {question.options.map((opt, index) => (
             <button
               key={index}
               onClick={() => setSelectedOption(index)}
               className={[
-                "p-3 border-2 rounded",
-                selectedOption === index ? "border-blue-400 bg-blue-100" : "border-gray-200 bg-white",
+                "p-4 border rounded-lg shadow-sm transition-all",
+                selectedOption === index
+                  ? "border-blue-400 bg-blue-100"
+                  : "border-gray-300 bg-white hover:bg-gray-50",
               ].join(" ")}
             >
               {opt.body}
@@ -162,28 +166,28 @@ const Lesson: NextPage = () => {
           ))}
         </div>
       )}
-
+  
       {question.type === "OpenEntry" && (
-        <div className="mt-4">
+        <div className="mb-6">
           <input
             type="text"
-            className="border px-3 py-2 w-full"
+            className="border px-4 py-3 w-full rounded-md text-center shadow-sm"
             placeholder="Escribe tu respuesta aquí"
             value={userAnswer}
             onChange={(e) => setUserAnswer(e.target.value)}
           />
         </div>
       )}
-
+  
       <button
         onClick={handleConfirm}
-        className="mt-5 rounded bg-green-500 px-4 py-2 font-bold text-white"
+        className="rounded bg-green-500 hover:bg-green-600 px-6 py-3 font-bold text-white transition"
       >
         Confirmar
       </button>
-
+  
       {feedback && (
-        <div className="mt-4 p-3 bg-gray-100 border-l-4 border-green-300 text-green-700">
+        <div className="mt-6 p-4 bg-gray-100 border-l-4 border-green-400 text-green-700 text-center">
           {feedback}
         </div>
       )}
