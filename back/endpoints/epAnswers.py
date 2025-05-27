@@ -7,48 +7,89 @@ answers_bp = Blueprint('answers', __name__)
 @answers_bp.route('/answers', methods=['POST'])
 def create_answer():
     """
-    Crea una nueva respuesta.
+    Crea una nueva respuesta y, si es correcta, calcula la exp neta
+    descontando penalizaciones por hints usados.
     Se espera recibir un JSON con:
-      - question_id: (string) ID de la pregunta asociada.
-      - user_id: (string) ID del usuario que responde.
-      - body: (opcional) Respuesta para preguntas de tipo OpenEntry.
-      - selectedOption: (opcional) Respuesta para preguntas de tipo Choice.
-    Se debe enviar solo uno de estos dos campos (body o selectedOption).
+      - question_id (string)
+      - user_id (string)
+      - body: para OpenEntry  OR  selectedOption: para Choice
     """
     data = request.get_json()
-    question_id = data.get("question_id")
-    user_id = data.get("user_id")
+    qid = data.get("question_id")
+    uid = data.get("user_id")
     body = data.get("body")
-    selected_option = data.get("selectedOption")
+    selected = data.get("selectedOption")
 
-    # Validar que se envíen los identificadores requeridos
-    if not question_id or not user_id:
+    # 1) Validaciones básicas
+    if not qid or not uid:
         return jsonify({"error": "Faltan question_id o user_id"}), 400
+    if (body is None and selected is None) or (body is not None and selected is not None):
+        return jsonify({"error": "Proporciona solo 'body' o 'selectedOption'"}), 400
 
-    # Se debe enviar únicamente body o selectedOption, pero no ambos
-    if (body is None and selected_option is None) or (body is not None and selected_option is not None):
-        return jsonify({"error": "Se debe proporcionar únicamente un campo: 'body' para preguntas OpenEntry o 'selectedOption' para preguntas Choice"}), 400
-
-    # Convertir los IDs a ObjectId
+    # 2) Conversión a ObjectId
     try:
-        q_obj_id = ObjectId(question_id)
-        u_obj_id = ObjectId(user_id)
-    except Exception:
-        return jsonify({"error": "question_id o user_id inválido"}), 400
+        q_obj = ObjectId(qid)
+        u_obj = ObjectId(uid)
+    except:
+        return jsonify({"error": "ID inválido"}), 400
 
-    answer = {
-        "question_id": q_obj_id,
-        "user_id": u_obj_id,
-    }
+    # 3) Inserto el registro de la respuesta
+    answer_doc = {"question_id": q_obj, "user_id": u_obj}
     if body is not None:
-        answer["body"] = body
-    if selected_option is not None:
-        answer["selectedOption"] = selected_option
+        answer_doc["body"] = body
+    else:
+        answer_doc["selectedOption"] = selected
 
-    result = mongo.db.answers.insert_one(answer)
+    ins = mongo.db.answers.insert_one(answer_doc)
+
+    # 4) Determino si la respuesta es correcta
+    q = mongo.db.questions.find_one({"_id": q_obj})
+    is_correct = False
+    if not q:
+        # (en principio no debería pasar)
+        return jsonify({"error": "Pregunta no encontrada"}), 404
+
+    if body is not None:
+        # comparación case-insensitive
+        is_correct = (body.strip().lower() == q.get("expectedAnswer", "").strip().lower())
+    else:
+        # encuentro la opción dentro de q["options"]
+        for opt in q.get("options", []):
+            if opt["body"] == selected and opt.get("isCorrect"):
+                is_correct = True
+                break
+
+    exp_awarded = 0
+
+    if is_correct:
+        # 5) Calculo penalizaciones
+        base_exp = q.get("exp", 0)
+        help_doc = mongo.db.question_helps.find_one({
+            "user_id": u_obj,
+            "question_id": q_obj
+        }) or {}
+
+        total_penalty = 0.0
+        if help_doc.get("usedHelp1"):
+            total_penalty += q.get("hint1", {}).get("penalty", 0)
+        if help_doc.get("usedHelp2"):
+            total_penalty += q.get("hint2", {}).get("penalty", 0)
+        total_penalty = min(total_penalty, 1.0)
+
+        # exp neta
+        exp_awarded = int(base_exp * (1 - total_penalty))
+
+        # 6) Actualizo la exp del usuario
+        mongo.db.users.update_one(
+            {"_id": u_obj},
+            {"$inc": {"exp": exp_awarded}}
+        )
+
+    # 7) Respondo al cliente
     return jsonify({
-        "message": "Respuesta creada exitosamente",
-        "answer_id": str(result.inserted_id)
+        "answer_id": str(ins.inserted_id),
+        "correct": is_correct,
+        "expAwarded": exp_awarded
     }), 201
 
 @answers_bp.route('/answers', methods=['GET'])

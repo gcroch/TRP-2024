@@ -7,6 +7,7 @@ from flask_cors import CORS, cross_origin
 from werkzeug.utils import secure_filename
 from bson import ObjectId
 from extensions import mongo
+from datetime import datetime
 
 questions_bp = Blueprint('questions', __name__)
 # Habilita CORS y OPTIONS en todas las rutas de este blueprint 
@@ -201,3 +202,52 @@ def validate_hint(h):
         and 0 <= h["penalty"] <= 1
     )
 
+@questions_bp.route('/questions/<question_id>/help', methods=['POST'])
+def use_help(question_id):
+    data = request.get_json()
+    u_id = ObjectId(data["user_id"])
+    h = data["helpNumber"]     # 1 o 2
+
+    hint_key = f"hint{h}"
+    q = mongo.db.questions.find_one({"_id": ObjectId(question_id)})
+    if not q or hint_key not in q:
+        return jsonify({"error":"No existe esa ayuda"}), 400
+
+    # Registra el uso (upsert)
+    mongo.db.question_helps.update_one(
+        {"user_id":u_id, "question_id":q["_id"]},
+        {"$set": {f"usedHelp{h}": True, "timestamp": datetime.utcnow()}},
+        upsert=True
+    )
+
+    return jsonify({
+      "text": q[hint_key]["text"],
+      "penalty": q[hint_key]["penalty"]
+    }), 200
+
+@questions_bp.route('/questions/<question_id>/help-status', methods=['GET'])
+@cross_origin()
+def get_help_status(question_id):
+    """
+    Devuelve { usedHelp1: bool, usedHelp2: bool } para user_id + question_id.
+    Parámetro en query string: ?user_id=...
+    """
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error":"Falta user_id"}), 400
+
+    try:
+        u_obj = ObjectId(user_id)
+        q_obj = ObjectId(question_id)
+    except:
+        return jsonify({"error":"ID inválido"}), 400
+
+    help_doc = mongo.db.question_helps.find_one({
+        "user_id": u_obj,
+        "question_id": q_obj
+    }) or {}
+
+    return jsonify({
+        "usedHelp1": bool(help_doc.get("usedHelp1", False)),
+        "usedHelp2": bool(help_doc.get("usedHelp2", False))
+    }), 200

@@ -4,41 +4,37 @@ import React, { useEffect, useState } from "react";
 import { withAuth } from "~/components/withAuth";
 import { useBoundStore } from "~/hooks/useBoundStore";
 
-// Interfaz según tu backend
 interface Question {
   _id: string;
   type: "Choice" | "OpenEntry";
   body: string;
   exp: number;
   unit_id: string;
-  options?: Array<{
-    body: string;
-    isCorrect: boolean;
-  }>;
+  options?: Array<{ body: string; isCorrect: boolean }>;
   expectedAnswer?: string;
   imagePath?: string;
-}
-
-interface AnswerRequest {
-  question_id: object;
-  user_id: object;
-  selectedOption?: string;
-  body?: string;
+  hint1?: { text: string; penalty: number };
+  hint2?: { text: string; penalty: number };
 }
 
 const Lesson: NextPage = () => {
   const router = useRouter();
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userAnswer, setUserAnswer] = useState<string>("");
+  const [userAnswer, setUserAnswer] = useState("");
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<string>("");
+  const [feedback, setFeedback] = useState("");
 
-  // Obtenemos userId y el método para aumentar las lecciones completadas desde la store
-  const userId = useBoundStore((x) => x.userId);
-  const increaseLessonsCompleted = useBoundStore((x) => x.increaseLessonsCompleted);
+  // Estados para los hints
+  const [usedHint1, setUsedHint1] = useState(false);
+  const [usedHint2, setUsedHint2] = useState(false);
+  const [hint1Text, setHint1Text] = useState("");
+  const [hint2Text, setHint2Text] = useState("");
 
-  // Al montar el componente, extraemos la query ?questionId=... y consultamos el backend
+  const userId = useBoundStore(x => x.userId);
+  const increaseLessonsCompleted = useBoundStore(x => x.increaseLessonsCompleted);
+
+  // 1) Cargo la pregunta
   useEffect(() => {
     const questionId = router.query["questionId"];
     if (!questionId || typeof questionId !== "string") {
@@ -48,14 +44,19 @@ const Lesson: NextPage = () => {
 
     const fetchQuestion = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${questionId}`);
-        if (!res.ok) {
-          throw new Error("Error fetching question data");
-        }
-        const data = await res.json();
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${questionId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        });
+        const data: Question = await res.json();
         setQuestion(data);
+
+        // Inicializo los estados de hints
+        setHint1Text("");
+        setHint2Text("");
+        setUsedHint1(false);
+        setUsedHint2(false);
       } catch (err) {
-        console.error("Error:", err);
+        console.error("Error fetching question:", err);
       } finally {
         setLoading(false);
       }
@@ -64,130 +65,201 @@ const Lesson: NextPage = () => {
     fetchQuestion();
   }, [router.query]);
 
-  // Función para manejar la confirmación de respuesta
+  // 2) Una vez que tenga la pregunta, pregunto al backend qué hints ya usó
+  useEffect(() => {
+    if (!question) return;
+    if (!question.hint1 && !question.hint2) return;
+
+    const fetchHelpStatus = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/questions/${question._id}/help-status?user_id=${userId}`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          }
+        );
+        if (!res.ok) throw new Error("help-status failed");
+        const { usedHelp1, usedHelp2 } = await res.json();
+
+        if (usedHelp1 && question.hint1) {
+          setUsedHint1(true);
+          setHint1Text(question.hint1.text);
+        }
+        if (usedHelp2 && question.hint2) {
+          setUsedHint2(true);
+          setHint2Text(question.hint2.text);
+        }
+      } catch (err) {
+        console.error("Error fetching help-status:", err);
+      }
+    };
+
+    fetchHelpStatus();
+  }, [question, userId]);
+
+  // 3) Función para pedir un hint
+  const requestHint = async (n: 1 | 2) => {
+    if (!question) return;
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/questions/${question._id}/help`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ user_id: userId, helpNumber: n }),
+        }
+      );
+      const { text } = await res.json();
+      if (n === 1) {
+        setUsedHint1(true);
+        setHint1Text(text);
+      } else {
+        setUsedHint2(true);
+        setHint2Text(text);
+      }
+    } catch (err) {
+      console.error("Error requesting hint:", err);
+    }
+  };
+
+  // 4) Confirmar respuesta
   const handleConfirm = async () => {
     if (!question) return;
 
     let correct = false;
     if (question.type === "Choice" && question.options) {
-      const correctIndex = question.options.findIndex((opt) => opt.isCorrect);
-      correct = selectedOption === correctIndex;
+      const idx = question.options.findIndex(opt => opt.isCorrect);
+      correct = selectedOption === idx;
       setFeedback(correct ? "¡Correcto!" : "Respuesta incorrecta");
       await submitAnswer(question._id, question.type, selectedOption?.toString() || "");
     } else if (question.type === "OpenEntry" && question.expectedAnswer) {
       correct = userAnswer.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase();
-      setFeedback(correct ? "¡Correcto!" : `Respuesta incorrecta.`);
+      setFeedback(correct ? "¡Correcto!" : "Respuesta incorrecta");
       await submitAnswer(question._id, question.type, userAnswer);
     }
 
-    // Si la respuesta fue correcta, incrementamos las lecciones completadas
-    if (correct) {
-      increaseLessonsCompleted(1);
-    }
+    if (correct) increaseLessonsCompleted(1);
 
-    // Espera un momento para mostrar el feedback y redirige a Learn
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    router.push("/learn");
+    setTimeout(() => router.push("/learn"), 1000);
   };
 
-  // Función auxiliar para enviar la respuesta al backend
-  const submitAnswer = async (questionId: string, questionType: string, userResponse: string) => {
+  // 5) Envío la respuesta
+  const submitAnswer = async (qid: string, type: string, resp: string) => {
+    const payload: Record<string, unknown> = {
+      question_id: { $oid: qid },
+      user_id: { $oid: userId },
+    };
+    if (type === "Choice") payload.selectedOption = resp;
+    else payload.body = resp;
+
     try {
-      const payload: Record<string, unknown> = {
-        question_id: { $oid: questionId },
-        user_id: { $oid: userId },
-      };
-
-      if (questionType === "Choice") {
-        payload.selectedOption = userResponse;
-      } else if (questionType === "OpenEntry") {
-        payload.body = userResponse;
-      }
-      console.log("Enviando payload:", payload);
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/answers`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/answers`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error("Error posting answer: " + errorText);
-      }
-
-      console.log("Respuesta enviada correctamente");
     } catch (err) {
-      console.error("Error submitAnswer:", err);
+      console.error("Error submitting answer:", err);
     }
   };
 
-  if (loading) {
-    return <div className="p-5">Cargando...</div>;
-  }
-
-  if (!question) {
-    return <div className="p-5">No se encontró la pregunta.</div>;
-  }
+  if (loading) return <div className="p-5">Cargando...</div>;
+  if (!question) return <div className="p-5">No se encontró la pregunta.</div>;
 
   return (
     <div className="p-5 max-w-4xl mx-auto text-center">
       <h1 className="text-2xl font-bold mb-6">Pregunta</h1>
-  
+
       {question.imagePath && (
         <div className="mb-6 flex justify-center">
           <img
             src={`${process.env.NEXT_PUBLIC_API_URL}/back/img/${question.imagePath}`}
-            alt={question.imagePath}
-            className="max-w-sm w-full h-auto rounded shadow border border-gray-200"
+            alt=""
+            className="max-w-sm w-full h-auto rounded shadow border"
           />
         </div>
       )}
-  
+
       <p className="mb-8 text-lg font-semibold">{question.body}</p>
-  
+
       {question.type === "Choice" && question.options && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {question.options.map((opt, index) => (
+          {question.options.map((opt, i) => (
             <button
-              key={index}
-              onClick={() => setSelectedOption(index)}
-              className={[
-                "p-4 border rounded-lg shadow-sm transition-all",
-                selectedOption === index
+              key={i}
+              onClick={() => setSelectedOption(i)}
+              className={`p-4 border rounded-lg shadow-sm transition-all ${
+                selectedOption === i
                   ? "border-blue-400 bg-blue-100"
-                  : "border-gray-300 bg-white hover:bg-gray-50",
-              ].join(" ")}
+                  : "border-gray-300 bg-white hover:bg-gray-50"
+              }`}
             >
               {opt.body}
             </button>
           ))}
         </div>
       )}
-  
+
       {question.type === "OpenEntry" && (
         <div className="mb-6">
           <input
             type="text"
-            className="border px-4 py-3 w-full rounded-md text-center shadow-sm"
-            placeholder="Escribe tu respuesta aquí"
+            className="border px-4 py-3 w-full rounded-md shadow-sm text-center"
+            placeholder="Escribe tu respuesta..."
             value={userAnswer}
-            onChange={(e) => setUserAnswer(e.target.value)}
+            onChange={e => setUserAnswer(e.target.value)}
           />
         </div>
       )}
-  
+
+      {/* ——————— HINTS ——————— */}
+      <div className="mb-6 space-y-4">
+        {question.hint1 && (
+          <div>
+            <button
+              onClick={() => requestHint(1)}
+              disabled={usedHint1}
+              className={`px-4 py-2 rounded ${
+                usedHint1
+                  ? "bg-gray-300 text-gray-600"
+                  : "bg-yellow-400 hover:bg-yellow-500 text-white"
+              }`}
+            >
+              {usedHint1 ? "Ayuda 1 mostrada" : "Pedir Ayuda 1"}
+            </button>
+            {hint1Text && <p className="italic mt-2">{hint1Text}</p>}
+          </div>
+        )}
+        {question.hint2 && (
+          <div>
+            <button
+              onClick={() => requestHint(2)}
+              disabled={usedHint2}
+              className={`px-4 py-2 rounded ${
+                usedHint2
+                  ? "bg-gray-300 text-gray-600"
+                  : "bg-yellow-400 hover:bg-yellow-500 text-white"
+              }`}
+            >
+              {usedHint2 ? "Ayuda 2 mostrada" : "Pedir Ayuda 2"}
+            </button>
+            {hint2Text && <p className="italic mt-2">{hint2Text}</p>}
+          </div>
+        )}
+      </div>
+
       <button
         onClick={handleConfirm}
         className="rounded bg-green-500 hover:bg-green-600 px-6 py-3 font-bold text-white transition"
       >
         Confirmar
       </button>
-  
+
       {feedback && (
-        <div className="mt-6 p-4 bg-gray-100 border-l-4 border-green-400 text-green-700 text-center">
+        <div className="mt-6 p-4 bg-gray-100 border-l-4 border-green-400 text-green-700">
           {feedback}
         </div>
       )}
