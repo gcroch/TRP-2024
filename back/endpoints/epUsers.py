@@ -19,58 +19,66 @@ users_bp = Blueprint('users', __name__)
 def get_users():
     users = mongo.db.users.find()
     all_users_data = []
-    
+    # Precargo todas las preguntas en un dict
+    questions = {q["_id"]: q for q in mongo.db.questions.find()}
+
     for user in users:
         totalExp = 0
-        # Se buscan todas las respuestas del usuario
+        # Obtengo todas las respuestas de este usuario
         answers = mongo.db.answers.find({"user_id": user["_id"]})
-        
-        # Cargar las preguntas en un diccionario para evitar múltiples consultas
-        questions = {q["_id"]: q for q in mongo.db.questions.find()}
-        
-        for answer in answers:
-            question = questions.get(answer["question_id"])
-            if question:
-                print(f"Procesando respuesta para la pregunta {question['_id']}")  # Depuración
-                try:
-                    # Procesar preguntas del tipo "choice"
-                    if "selectedOption" in answer:
-                        idx = int(answer["selectedOption"])
-                        print(f"Índice de opción seleccionada: {idx}")  # Depuración
-                        # Verificar que el índice sea válido y que la opción seleccionada sea correcta
-                        if 0 <= idx < len(question["options"]):
-                            selected_option = question["options"][idx]
-                            print(f"Verificando opción: {selected_option}")  # Depuración
-                            if selected_option.get("isCorrect"):
-                                totalExp += question.get("exp", 0)
-                                print(f"Experiencia sumada: {question.get('exp', 0)}")  # Depuración
-                    
-                    # Procesar preguntas del tipo "OpenEntry"
-                    elif "body" in answer:
-                        print(f"Verificando respuesta abierta: {answer['body']}")  # Depuración
-                        # Aquí puedes agregar la lógica para evaluar la respuesta de tipo OpenEntry
-                        # Ejemplo de validación:
-                        if validate_open_entry_answer(question, answer["body"]):
-                            totalExp += question.get("exp", 0)
-                            print(f"Experiencia sumada por OpenEntry: {question.get('exp', 0)}")  # Depuración
 
-                except (ValueError, IndexError) as e:
-                    print(f"Error procesando la respuesta: {e}")  # Depuración
-        
-        user_data = {
-            "user_id": user.get("_id"),
+        for ans in answers:
+            q = questions.get(ans["question_id"])
+            if not q:
+                continue
+
+            # 1) Verifico si la respuesta es correcta
+            is_correct = False
+            if "selectedOption" in ans:
+                try:
+                    idx = int(ans["selectedOption"])
+                    opts = q.get("options", [])
+                    if 0 <= idx < len(opts) and opts[idx].get("isCorrect"):
+                        is_correct = True
+                except (ValueError, IndexError):
+                    continue
+            elif "body" in ans:
+                if validate_open_entry_answer(q, ans["body"]):
+                    is_correct = True
+
+            if not is_correct:
+                continue
+
+            # 2) Consulto si usó hints para esta pregunta
+            help_doc = mongo.db.question_helps.find_one({
+                "user_id": user["_id"],
+                "question_id": q["_id"]
+            }) or {}
+
+            # 3) Sumo penalizaciones
+            total_penalty = 0.0
+            if help_doc.get("usedHelp1"):
+                total_penalty += q.get("hint1", {}).get("penalty", 0)
+            if help_doc.get("usedHelp2"):
+                total_penalty += q.get("hint2", {}).get("penalty", 0)
+            total_penalty = min(total_penalty, 1.0)
+
+            # 4) Calculo experiencia neta y acumulo
+            base_exp = q.get("exp", 0)
+            awarded = int(base_exp * (1 - total_penalty))
+            totalExp += awarded
+
+        all_users_data.append({
+            "user_id": str(user["_id"]),
             "DNI": user.get("DNI"),
             "name": user.get("name"),
             "lastname": user.get("lastname"),
             "email": user.get("email"),
             "role": user.get("role"),
-            "exp": totalExp  # Experiencia acumulada
-        }
-        
-        all_users_data.append(user_data)
-    
-    return jsonify(all_users_data), 200
+            "exp": totalExp
+        })
 
+    return jsonify(all_users_data), 200
 
 @users_bp.route('/register', methods=['POST'])
 def register():
@@ -130,40 +138,54 @@ def login():
 @jwt_required()
 def get_profile():
     current_dni = get_jwt_identity()
-
-    # Buscar usuario por su DNI
     user = mongo.db.users.find_one({"DNI": current_dni})
-
     if not user:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
     totalExp = 0
-
-    # Obtener todas las respuestas del usuario
+    # Precargo preguntas
+    questions = {q["_id"]: q for q in mongo.db.questions.find()}
     answers = mongo.db.answers.find({"user_id": user["_id"]})
 
-    # Cargar todas las preguntas
-    questions = {q["_id"]: q for q in mongo.db.questions.find()}
+    for ans in answers:
+        q = questions.get(ans["question_id"])
+        if not q:
+            continue
 
-    for answer in answers:
-        question = questions.get(answer["question_id"])
-        if question:
+        # 1) Verifico corrección
+        is_correct = False
+        if "selectedOption" in ans:
             try:
-                # Procesar multiple choice
-                if "selectedOption" in answer:
-                    idx = int(answer["selectedOption"])
-                    if 0 <= idx < len(question.get("options", [])):
-                        selected_option = question["options"][idx]
-                        if selected_option.get("isCorrect"):
-                            totalExp += question.get("exp", 0)
+                idx = int(ans["selectedOption"])
+                opts = q.get("options", [])
+                if 0 <= idx < len(opts) and opts[idx].get("isCorrect"):
+                    is_correct = True
+            except (ValueError, IndexError):
+                continue
+        elif "body" in ans:
+            if validate_open_entry_answer(q, ans["body"]):
+                is_correct = True
 
-                # Procesar OpenEntry
-                elif "body" in answer:
-                    if validate_open_entry_answer(question, answer["body"]):
-                        totalExp += question.get("exp", 0)
+        if not is_correct:
+            continue
 
-            except (ValueError, IndexError) as e:
-                print(f"Error procesando respuesta: {e}")
+        # 2) Penalizaciones por hints
+        help_doc = mongo.db.question_helps.find_one({
+            "user_id": user["_id"],
+            "question_id": q["_id"]
+        }) or {}
+
+        total_penalty = 0.0
+        if help_doc.get("usedHelp1"):
+            total_penalty += q.get("hint1", {}).get("penalty", 0)
+        if help_doc.get("usedHelp2"):
+            total_penalty += q.get("hint2", {}).get("penalty", 0)
+        total_penalty = min(total_penalty, 1.0)
+
+        # 3) Experiencia neta
+        base_exp = q.get("exp", 0)
+        awarded = int(base_exp * (1 - total_penalty))
+        totalExp += awarded
 
     profile = {
         "userId": str(user["_id"]),
@@ -174,9 +196,7 @@ def get_profile():
         "role": user.get("role", ""),
         "exp": totalExp,
     }
-
-    return jsonify(profile)
-
+    return jsonify(profile), 200
 
 
 @users_bp.route('/profile', methods=['PUT'])
