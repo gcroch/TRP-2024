@@ -28,6 +28,11 @@ const QuestionsAdmin: NextPage = () => {
   const [expectedAnswer, setExpectedAnswer] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const [hint1Text, setHint1Text] = useState("");
+  const [hint1Penalty, setHint1Penalty] = useState(0.5);
+  const [hint2Text, setHint2Text] = useState("");
+  const [hint2Penalty, setHint2Penalty] = useState(0.25);
+
 
   useEffect(() => {
     if (!token) return;
@@ -71,7 +76,14 @@ const QuestionsAdmin: NextPage = () => {
     const payload: any = { type, body, exp, unit_id: unitId };
     if (type === "Choice") payload.options = options;
     else payload.expectedAnswer = expectedAnswer;
-  
+    
+    if (hint1Text) {
+      payload.hint1 = { text: hint1Text, penalty: hint1Penalty };
+    }
+    if (hint2Text) {
+      payload.hint2 = { text: hint2Text, penalty: hint2Penalty };
+    }
+
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions`, {
       method: "POST",
       headers: {
@@ -268,7 +280,43 @@ const QuestionsAdmin: NextPage = () => {
             />
           </div>
         )}
-
+        <div className="space-y-2">
+  <h2 className="font-semibold">Ayudas opcionales</h2>
+  <div className="flex gap-2">
+    <input
+      type="text"
+      placeholder="Texto ayuda 1"
+      value={hint1Text}
+      onChange={e => setHint1Text(e.target.value)}
+      className="border px-2 py-1 flex-grow"
+    />
+    <input
+      type="number"
+      step="0.05"
+      min={0} max={1}
+      value={hint1Penalty}
+      onChange={e => setHint1Penalty(parseFloat(e.target.value))}
+      className="border px-2 py-1 w-24"
+    />
+  </div>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Texto ayuda 2"
+          value={hint2Text}
+          onChange={e => setHint2Text(e.target.value)}
+          className="border px-2 py-1 flex-grow"
+        />
+        <input
+          type="number"
+          step="0.05"
+          min={0} max={1}
+          value={hint2Penalty}
+          onChange={e => setHint2Penalty(parseFloat(e.target.value))}
+          className="border px-2 py-1 w-24"
+        />
+      </div>
+    </div>
         <button className="bg-green-500 text-white px-4 py-2 rounded">
           Crear Pregunta
         </button>

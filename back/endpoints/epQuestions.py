@@ -58,6 +58,19 @@ def create_question():
     else:
         return jsonify({"error": "Tipo de pregunta no válido"}), 400
 
+    # Procesar los hints, si vienen
+    for i in (1,2):
+        key = f"hint{i}"
+        if key in data:
+            if not validate_hint(data[key]):
+                return jsonify({"error": f"{key} inválido. Debe tener 'text' y 'penalty' entre 0 y 1"}), 400
+            question[key] = {
+                "text": data[key]["text"].strip(),
+                "penalty": float(data[key]["penalty"])
+            }
+
+
+
     res = mongo.db.questions.insert_one(question)
     return jsonify({"message": "Pregunta creada", "question_id": str(res.inserted_id)}), 201
 
@@ -108,6 +121,17 @@ def update_question(question_id):
     for f in ("type","body","exp","expectedAnswer","options","imagePath"):
         if f in data:
             updates[f] = data[f]
+
+    # actualizar hints si vienen
+    for i in (1,2):
+        key = f"hint{i}"
+        if key in data:
+            if not validate_hint(data[key]):
+                return jsonify({"error": f"{key} inválido"}), 400
+            updates[key] = {
+                "text": data[key]["text"].strip(),
+                "penalty": float(data[key]["penalty"])
+            }
     if "unit_id" in data:
         try:
             nu = ObjectId(data["unit_id"])
@@ -166,3 +190,14 @@ def serve_question_image(filename):
     # Ruta absoluta al directorio donde están las imágenes
     image_dir = os.path.join(current_app.root_path, "img")
     return send_from_directory(image_dir, filename)
+
+
+def validate_hint(h):
+    """Devuelve True si h tiene {'text': str, 'penalty': float entre 0 y 1}"""
+    return (
+        isinstance(h, dict)
+        and isinstance(h.get("text"), str)
+        and isinstance(h.get("penalty"), (int, float))
+        and 0 <= h["penalty"] <= 1
+    )
+

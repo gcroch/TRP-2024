@@ -13,6 +13,8 @@ interface Question {
   options?: Option[];
   expectedAnswer?: string;
   imagePath?: string;
+  hint1?: string;
+  hint2?: string;
 }
 interface Unit { _id: string; title: string; }
 
@@ -34,6 +36,10 @@ const EditQuestion: NextPage = () => {
   const [imagePath, setImagePath] = useState<string>("");           // ruta existente :contentReference[oaicite:2]{index=2}
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
 
+  const [hint1Text, setHint1Text] = useState("");
+  const [hint2Text, setHint2Text] = useState("");
+  const [hint1Penalty, setHint1Penalty] = useState(0.5);
+  const [hint2Penalty, setHint2Penalty] = useState(0.25);
   // ── Carga inicial ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!id) return;
@@ -50,6 +56,15 @@ const EditQuestion: NextPage = () => {
         if (q.options) setOptions(q.options);
         if (q.expectedAnswer) setExpectedAnswer(q.expectedAnswer);
         if (q.imagePath) setImagePath(q.imagePath);                   // cargar imagePath
+        
+        if (q.hint1) {
+          setHint1Text(q.hint1.text || "");
+          setHint1Penalty(q.hint1.penalty || 0.5);
+        }
+        if (q.hint2) {
+          setHint2Text(q.hint2.text || "");
+          setHint2Penalty(q.hint2.penalty || 0.25);
+        }
       })
       .catch(console.error);
 
@@ -87,6 +102,8 @@ const EditQuestion: NextPage = () => {
     if (type === "Choice") payload.options = options;
     else payload.expectedAnswer = expectedAnswer;
     if (updatedImagePath) payload.imagePath = updatedImagePath;                 // 2) asociar ruta
+    payload.hint1 = { text: hint1Text, penalty: hint1Penalty };
+    payload.hint2 = { text: hint2Text, penalty: hint2Penalty };
 
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${id}`, {
       method: "PUT",
@@ -236,6 +253,25 @@ const EditQuestion: NextPage = () => {
             />
           </div>
         )}
+        <div>
+          <label className="block mb-1">Ayuda 1</label>
+          <input
+            type="text"
+            value={hint1Text}
+            onChange={e => setHint1Text(e.target.value)}
+            className="border px-2 py-1 w-full"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Ayuda 2</label>
+          <input
+            type="text"
+            value={hint2Text}
+            onChange={e => setHint2Text(e.target.value)}
+            className="border px-2 py-1 w-full"
+          />
+        </div>
 
         <div className="flex gap-2 pt-4">
           <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
