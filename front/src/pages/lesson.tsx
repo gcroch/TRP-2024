@@ -17,6 +17,19 @@ interface Question {
   hint2?: { text: string; penalty: number };
 }
 
+const positivePhrases = [
+  "¡Bien hecho!",
+  "¡Excelente trabajo!",
+  "¡Muy bien!",
+  "¡Sigue así!",
+  "¡Fantástico!",
+  "¡Impresionante!",
+  "¡Estás en racha!",
+  "¡Perfecto!",
+  "¡Genial!",
+  "¡Eso es todo!"
+];
+
 const Lesson: NextPage = () => {
   const router = useRouter();
   const [question, setQuestion] = useState<Question | null>(null);
@@ -24,6 +37,7 @@ const Lesson: NextPage = () => {
   const [userAnswer, setUserAnswer] = useState("");
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   // Estados para los hints
   const [usedHint1, setUsedHint1] = useState(false);
@@ -44,9 +58,12 @@ const Lesson: NextPage = () => {
 
     const fetchQuestion = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/questions/${questionId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/questions/${questionId}`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        );
         const data: Question = await res.json();
         setQuestion(data);
 
@@ -65,7 +82,7 @@ const Lesson: NextPage = () => {
     fetchQuestion();
   }, [router.query]);
 
-  // 2) Una vez que tenga la pregunta, pregunto al backend qué hints ya usó
+  // 2) Fetch de hints ya usados
   useEffect(() => {
     if (!question) return;
     if (!question.hint1 && !question.hint2) return;
@@ -75,7 +92,7 @@ const Lesson: NextPage = () => {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/questions/${question._id}/help-status?user_id=${userId}`,
           {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
           }
         );
         if (!res.ok) throw new Error("help-status failed");
@@ -97,9 +114,9 @@ const Lesson: NextPage = () => {
     fetchHelpStatus();
   }, [question, userId]);
 
-  // 3) Función para pedir un hint
+  // 3) Pedir hint
   const requestHint = async (n: 1 | 2) => {
-    if (!question) return;
+    if (!question || submitted) return;
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/questions/${question._id}/help`,
@@ -127,26 +144,34 @@ const Lesson: NextPage = () => {
 
   // 4) Confirmar respuesta
   const handleConfirm = async () => {
-    if (!question) return;
+    if (!question || submitted) return;
 
     let correct = false;
     if (question.type === "Choice" && question.options) {
       const idx = question.options.findIndex(opt => opt.isCorrect);
       correct = selectedOption === idx;
-      setFeedback(correct ? "¡Correcto!" : "Respuesta incorrecta");
       await submitAnswer(question._id, question.type, selectedOption?.toString() || "");
     } else if (question.type === "OpenEntry" && question.expectedAnswer) {
-      correct = userAnswer.trim().toLowerCase() === question.expectedAnswer.trim().toLowerCase();
-      setFeedback(correct ? "¡Correcto!" : "Respuesta incorrecta");
+      correct =
+        userAnswer.trim().toLowerCase() ===
+        question.expectedAnswer.trim().toLowerCase();
       await submitAnswer(question._id, question.type, userAnswer);
     }
 
-    if (correct) increaseLessonsCompleted(1);
+    // feedback dinámico
+    if (correct) {
+      const frase =
+        positivePhrases[Math.floor(Math.random() * positivePhrases.length)];
+      setFeedback(frase);
+      increaseLessonsCompleted(1);
+    } else {
+      setFeedback("Respuesta incorrecta");
+    }
 
-    setTimeout(() => router.push("/learn"), 1000);
+    setSubmitted(true);
   };
 
-  // 5) Envío la respuesta
+  // 5) Envío la respuesta al backend
   const submitAnswer = async (qid: string, type: string, resp: string) => {
     const payload: Record<string, unknown> = {
       question_id: { $oid: qid },
@@ -185,17 +210,23 @@ const Lesson: NextPage = () => {
 
       <p className="mb-8 text-lg font-semibold">{question.body}</p>
 
+      {/* Choice */}
       {question.type === "Choice" && question.options && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
           {question.options.map((opt, i) => (
             <button
               key={i}
-              onClick={() => setSelectedOption(i)}
-              className={`p-4 border rounded-lg shadow-sm transition-all ${
-                selectedOption === i
-                  ? "border-blue-400 bg-blue-100"
-                  : "border-gray-300 bg-white hover:bg-gray-50"
-              }`}
+              onClick={() => !submitted && setSelectedOption(i)}
+              disabled={submitted}
+              className={`
+                p-4 border rounded-lg shadow-sm transition-all
+                ${
+                  selectedOption === i
+                    ? "border-blue-400 bg-blue-100"
+                    : "border-gray-300 bg-white hover:bg-gray-50"
+                }
+                ${submitted ? "opacity-50 cursor-not-allowed" : ""}
+              `}
             >
               {opt.body}
             </button>
@@ -203,30 +234,37 @@ const Lesson: NextPage = () => {
         </div>
       )}
 
+      {/* OpenEntry */}
       {question.type === "OpenEntry" && (
         <div className="mb-6">
           <input
             type="text"
-            className="border px-4 py-3 w-full rounded-md shadow-sm text-center"
+            disabled={submitted}
+            className={`border px-4 py-3 w-full rounded-md shadow-sm text-center
+              ${submitted ? "opacity-50 cursor-not-allowed" : ""}`}
             placeholder="Escribe tu respuesta..."
             value={userAnswer}
-            onChange={e => setUserAnswer(e.target.value)}
+            onChange={e => !submitted && setUserAnswer(e.target.value)}
           />
         </div>
       )}
 
-      {/* ——————— HINTS ——————— */}
+      {/* Hints */}
       <div className="mb-6 space-y-4">
         {question.hint1 && (
           <div>
             <button
               onClick={() => requestHint(1)}
-              disabled={usedHint1}
-              className={`px-4 py-2 rounded ${
-                usedHint1
-                  ? "bg-gray-300 text-gray-600"
-                  : "bg-yellow-400 hover:bg-yellow-500 text-white"
-              }`}
+              disabled={usedHint1 || submitted}
+              className={`
+                px-4 py-2 rounded
+                ${
+                  usedHint1
+                    ? "bg-gray-300 text-gray-600"
+                    : "bg-yellow-400 hover:bg-yellow-500 text-white"
+                }
+                ${submitted ? "opacity-50 cursor-not-allowed" : ""}
+              `}
             >
               {usedHint1 ? "Ayuda 1 mostrada" : "Pedir Ayuda 1"}
             </button>
@@ -237,12 +275,16 @@ const Lesson: NextPage = () => {
           <div>
             <button
               onClick={() => requestHint(2)}
-              disabled={usedHint2}
-              className={`px-4 py-2 rounded ${
-                usedHint2
-                  ? "bg-gray-300 text-gray-600"
-                  : "bg-yellow-400 hover:bg-yellow-500 text-white"
-              }`}
+              disabled={usedHint2 || submitted}
+              className={`
+                px-4 py-2 rounded
+                ${
+                  usedHint2
+                    ? "bg-gray-300 text-gray-600"
+                    : "bg-yellow-400 hover:bg-yellow-500 text-white"
+                }
+                ${submitted ? "opacity-50 cursor-not-allowed" : ""}
+              `}
             >
               {usedHint2 ? "Ayuda 2 mostrada" : "Pedir Ayuda 2"}
             </button>
@@ -251,17 +293,28 @@ const Lesson: NextPage = () => {
         )}
       </div>
 
-      <button
-        onClick={handleConfirm}
-        className="rounded bg-green-500 hover:bg-green-600 px-6 py-3 font-bold text-white transition"
-      >
-        Confirmar
-      </button>
-
-      {feedback && (
-        <div className="mt-6 p-4 bg-gray-100 border-l-4 border-green-400 text-green-700">
-          {feedback}
-        </div>
+      {/* Botones */}
+      {!submitted ? (
+        <button
+          onClick={handleConfirm}
+          className="rounded bg-green-500 hover:bg-green-600 px-6 py-3 font-bold text-white transition"
+        >
+          Confirmar
+        </button>
+      ) : (
+        <>
+          {feedback && (
+            <div className="mt-6 p-4 bg-gray-100 border-l-4 border-green-400 text-green-700">
+              {feedback}
+            </div>
+          )}
+          <button
+            onClick={() => router.push("/learn")}
+            className="mt-4 rounded bg-blue-500 hover:bg-blue-600 px-6 py-3 font-bold text-white transition"
+          >
+            Aceptar
+          </button>
+        </>
       )}
     </div>
   );
