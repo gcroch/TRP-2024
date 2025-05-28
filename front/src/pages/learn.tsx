@@ -1,6 +1,6 @@
 import { type NextPage } from "next";
 import Link from "next/link";
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { withAuth } from "~/components/withAuth";
 import { useUnits } from "~/hooks/useUnits";
@@ -9,7 +9,6 @@ import { useCompletedQuestions } from "~/hooks/useCompletedQuestions";
 
 import {
   ActiveBookSvg,
-  LockedBookSvg,
   CheckmarkSvg,
   LockSvg,
   StarSvg,
@@ -64,7 +63,7 @@ const mapQuestionsToUnits = (
       .map(questionToTile),
   }));
 
-// --- Render unitaria de la unidad ---
+// --- Render unitaria de la unidad con curva en S ---
 const UnitSection = ({
   unit,
   completed,
@@ -74,10 +73,9 @@ const UnitSection = ({
 }) => {
   const router = useRouter();
 
-  // Estado para la pregunta activa elegida al azar
+  // pregunta activa
   const [activeQuestionId, setActiveQuestionId] = useState<string | null>(null);
 
-  // Recalcula el siguiente al azar solo cuando cambia `completed`
   useEffect(() => {
     const uncompleted = unit.tiles.filter(
       (t) => !completed.includes(t.questionId)
@@ -90,31 +88,75 @@ const UnitSection = ({
     }
   }, [completed, unit.tiles]);
 
-  // Cuántos lleva completados
   const doneCount = unit.tiles.filter((t) =>
     completed.includes(t.questionId)
   ).length;
 
-  // Cuántos faltan (excluyendo el activo)
   const total = unit.tiles.length;
   const lockedCount =
     activeQuestionId === null
-      ? total - doneCount // si ya terminó, todos bloqueados excepto checks
+      ? total - doneCount
       : total - doneCount - 1;
 
-  // Encuentra el tile activo para decidir icono
   const activeTile = unit.tiles.find(
     (t) => t.questionId === activeQuestionId
   );
+
+  // Construir array de nodos
+  const nodes: React.ReactNode[] = [];  
+
+  // checks
+  for (let i = 0; i < doneCount; i++) {
+    nodes.push(
+      <button
+        key={`done-${i}`}
+        className="rounded-full p-4 border-b-8 border-yellow-500 bg-yellow-400"
+      >
+        <CheckmarkSvg />
+      </button>
+    );
+  }
+
+  // nodo activo
+  if (activeTile) {
+    nodes.push(
+      <button
+        key="active"
+        onClick={() =>
+          router.push(`/lesson?questionId=${activeTile.questionId}`)
+        }
+        className={`rounded-full p-4 border-b-8 transition-all ${
+          unit.borderColor || "border-[#46a302]"
+        } ${unit.backgroundColor || "bg-[#58cc02]"}`}
+      >
+        {activeTile.type === "book" ? <ActiveBookSvg /> : <StarSvg />}
+      </button>
+    );
+  }
+
+  // locks
+  for (let i = 0; i < lockedCount; i++) {
+    nodes.push(
+      <button
+        key={`locked-${i}`}
+        className="rounded-full p-4 border-b-8 border-gray-300 bg-gray-200"
+      >
+        <LockSvg />
+      </button>
+    );
+  }
+
+  // Parámetros para la curva
+  const AMPLITUDE = 40; // px
+  const count = nodes.length;
 
   return (
     <section className="mb-12">
       {/* Header verde de la unidad */}
       <article
-        className={[
-          "max-w-2xl text-white sm:rounded-xl",
+        className={`max-w-2xl text-white sm:rounded-xl ${
           unit.backgroundColor || "bg-[#58cc02]"
-        ].join(" ")}
+        }`}
       >
         <header className="flex items-center justify-between p-4">
           <div>
@@ -123,10 +165,9 @@ const UnitSection = ({
           </div>
           <Link
             href={`https://duolingo.com/guidebook/${unit.level}`}
-            className={[
-              "flex items-center gap-3 p-3 rounded-2xl border-2 border-b-4 transition hover:text-gray-100",
+            className={`flex items-center gap-3 p-3 rounded-2xl border-2 border-b-4 transition hover:text-gray-100 ${
               unit.borderColor || "border-[#46a302]"
-            ].join(" ")}
+            }`}
           >
             <GuidebookSvg />
             <span className="sr-only">Guidebook</span>
@@ -134,47 +175,21 @@ const UnitSection = ({
         </header>
       </article>
 
-      {/* Nodo lineal: checks, activo, bloqueados */}
+      {/* Camino curvado en S */}
       <div className="relative flex flex-col items-center gap-6 mt-6">
-        {/* Checks por cada completada */}
-        {Array.from({ length: doneCount }).map((_, i) => (
-          <div key={`done-${i}`} className="h-[64px] w-[64px]">
-            <button className="rounded-full p-4 border-b-8 border-yellow-500 bg-yellow-400">
-              <CheckmarkSvg />
-            </button>
-          </div>
-        ))}
-
-        {/* Nodo activo único */}
-        {activeTile && (
-          <div className="h-[64px] w-[64px]">
-            <button
-              onClick={() =>
-                router.push(`/lesson?questionId=${activeTile.questionId}`)
-              }
-              className={[
-                "rounded-full p-4 border-b-8 transition-all",
-                unit.borderColor || "border-[#46a302]",
-                unit.backgroundColor || "bg-[#58cc02]"
-              ].join(" ")}
+        {nodes.map((node, idx) => {
+          const t = count > 1 ? idx / (count - 1) : 0;
+          const x = Math.sin(t * Math.PI) * AMPLITUDE;
+          return (
+            <div
+              key={idx}
+              style={{ transform: `translateX(${x}px)` }}
+              className="transition-transform"
             >
-              {activeTile.type === "book" ? (
-                <ActiveBookSvg />
-              ) : (
-                <StarSvg />
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Candados por cada bloqueado restante */}
-        {Array.from({ length: lockedCount }).map((_, i) => (
-          <div key={`locked-${i}`} className="h-[64px] w-[64px]">
-            <button className="rounded-full p-4 border-b-8 border-gray-300 bg-gray-200">
-              <LockSvg />
-            </button>
-          </div>
-        ))}
+              {node}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
