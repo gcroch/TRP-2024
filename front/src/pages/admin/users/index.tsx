@@ -30,7 +30,7 @@ const UsersAdmin: NextPage = () => {
       .then(data => {
         const formatted = data.map((u: any) => ({
           ...u,
-          _id: u.user_id?.$oid || "",  // 👈 agrega un _id string plano
+          _id: u.id,  // 👈 agrega un _id string plano
         }));
         console.log("Usuarios transformados:", formatted);
         setUsers(formatted);
@@ -115,7 +115,7 @@ const UsersAdmin: NextPage = () => {
               <td className="border px-2 py-1">{u.role}</td>
               <td className="border px-2 py-1">
                 <button
-                  onClick={()=>router.push(`/admin/users/${u._id}`)}
+                  onClick={()=>router.push(`/admin/users/${u.user_id}`)}
                   className="text-blue-600 hover:underline"
                 >Editar</button>
               </td>
