@@ -210,31 +210,34 @@ const Profile: NextPage = () => {
         <ProfileStatsSection exp={profile.exp} />
         <ChangePasswordSection />
 
-        {profile.role === "admin" && (
-          <section className="mt-12 border-t pt-6 space-y-4">
-            <h2 className="text-2xl font-bold">Administración</h2>
-            <div className="flex flex-col gap-3 max-w-sm">
-              <button
-                onClick={() => router.push("/admin/units")}
-                className="w-full bg-indigo-600 text-white py-2 rounded"
-              >
-                ABM Unidades
-              </button>
-              <button
-                onClick={() => router.push("/admin/questions")}
-                className="w-full bg-indigo-600 text-white py-2 rounded"
-              >
-                ABM Preguntas
-              </button>
+        {(profile.role === "admin" || profile.role === "docente") && (
+        <section className="mt-12 border-t pt-6 space-y-4">
+          <h2 className="text-2xl font-bold">Administración</h2>
+          <div className="flex flex-col gap-3 max-w-sm">
+            <button
+              onClick={() => router.push("/admin/units")}
+              className="w-full bg-indigo-600 text-white py-2 rounded"
+            >
+              ABM Unidades
+            </button>
+            <button
+              onClick={() => router.push("/admin/questions")}
+              className="w-full bg-indigo-600 text-white py-2 rounded"
+            >
+              ABM Preguntas
+            </button>
+
+            {profile.role === "admin" && (
               <button
                 onClick={() => router.push("/admin/users")}
                 className="w-full bg-indigo-600 text-white py-2 rounded"
               >
                 ABM Usuarios
               </button>
-            </div>
-          </section>
-        )}
+            )}
+          </div>
+        </section>
+      )}
       </main>
 
       <RightBar />

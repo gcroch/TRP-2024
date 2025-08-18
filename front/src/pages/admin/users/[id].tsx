@@ -19,7 +19,7 @@ const EditUser: NextPage = () => {
   const [name, setName] = useState("");
   const [lastname, setLastname] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"user"|"admin">("user");
+  const [role, setRole] = useState<"user"|"docente"|"admin">("user");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState<string | null>(null);
 
@@ -109,6 +109,7 @@ const EditUser: NextPage = () => {
             className="border px-2 py-1 w-full"
           >
             <option value="user">Usuario</option>
+            <option value="docente">Docente</option>
             <option value="admin">Administrador</option>
           </select>
         </div>
