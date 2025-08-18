@@ -110,8 +110,23 @@ const ChangePasswordSection = () => {
   const [message, setMessage] = useState("");
   const token = localStorage.getItem("token");
 
+  // ✅ Validación: al menos 12 caracteres, una mayúscula, una minúscula y un número
+  const validatePassword = (password: string) => {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/;
+    return regex.test(password);
+  };
+
   const handleChangePassword = async () => {
     if (!token) return;
+
+    // 👉 Primero validar
+    if (!validatePassword(newPassword)) {
+      setMessage(
+        "La contraseña debe tener al menos 12 caracteres, incluir mayúsculas, minúsculas y al menos un número."
+      );
+      return;
+    }
+
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
       method: "PUT",
       headers: {
@@ -123,14 +138,15 @@ const ChangePasswordSection = () => {
         password: newPassword,
       }),
     });
+
     if (res.ok) {
-      setMessage("Contraseña actualizada.");
+      setMessage("Contraseña actualizada ✅");
       setIsEditing(false);
       setCurrentPassword("");
       setNewPassword("");
     } else {
       const errData = await res.json();
-      setMessage(errData.error || "Error al actualizar contraseña");
+      setMessage(errData.error || "Error al actualizar contraseña ❌");
     }
   };
 
@@ -167,7 +183,7 @@ const ChangePasswordSection = () => {
           </button>
         </div>
       )}
-      {message && <p className="mt-2 text-sm text-center">{message}</p>}
+      {message && <p className="mt-2 text-sm text-center text-red-600">{message}</p>}
     </section>
   );
 };
