@@ -12,7 +12,9 @@ load_dotenv(os.path.join(os.path.dirname(__file__),"..", '.env'))
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 app.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY")
-CORS(app)
+CORS(app, resources={
+    r"/*": {"origins": ["http://localhost:3000", "https://trp.unlu.edu.ar"]}
+})
 
 # Configuración de correo (ajusta según tu servidor SMTP)
 app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER")
