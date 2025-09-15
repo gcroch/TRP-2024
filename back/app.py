@@ -49,7 +49,7 @@ app.register_blueprint(report_bp)
 # 🔒 Middleware para restringir orígenes no permitidos
 @app.before_request
 def restrict_origin():
-    allowed = ["http://localhost:3000", "https://trp.unlu.edu.ar"]
+    allowed = ["http://localhost:3000", "https://trp.unlu.edu.ar", "http://170.210.103.76"]
     origin = request.headers.get("Origin")
 
     # Bloquear accesos directos sin Origin a rutas sensibles
