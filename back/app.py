@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 from flask_jwt_extended import JWTManager
 from extensions import mongo 
@@ -7,12 +7,14 @@ from flask_mail import Mail
 from flask_cors import CORS
 
 # Cargar variables de entorno (.env ubicado en la raíz del proyecto)
-load_dotenv(os.path.join(os.path.dirname(__file__),"..", '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 app.config["JWT_SECRET_KEY"] = os.getenv("SECRET_KEY")
-CORS(app, resources={
+
+# 🔒 Configuración de CORS: solo permite tu frontend
+CORS(app, supports_credentials=True, resources={
     r"/*": {"origins": ["http://localhost:3000", "https://trp.unlu.edu.ar"]}
 })
 
@@ -28,25 +30,29 @@ mongo.init_app(app)
 jwt = JWTManager(app)
 mail = Mail(app)
 
-# Registrar el blueprint de endpoints de usuarios
+# Registrar los blueprints de endpoints
 from endpoints.epUsers import users_bp
 app.register_blueprint(users_bp)
 
-# Registrar el blueprint de endpoints de las unidades
 from endpoints.epUnits import units_bp
 app.register_blueprint(units_bp)
 
-# Registrar el blueprint de endpoints de las preguntas
 from endpoints.epQuestions import questions_bp
 app.register_blueprint(questions_bp)
 
-# Registrar el blueprint de endpoints de las respuestas
 from endpoints.epAnswers import answers_bp
 app.register_blueprint(answers_bp)
 
-# Registrar el blueprint de endpoints de los informes de usuario
 from endpoints.epUsersReport import report_bp
 app.register_blueprint(report_bp)
+
+# 🔒 Middleware para restringir orígenes no permitidos
+@app.before_request
+def restrict_origin():
+    allowed = ["http://localhost:3000", "https://trp.unlu.edu.ar"]
+    origin = request.headers.get("Origin")
+    if origin and origin not in allowed:
+        return jsonify({"error": "Origin not allowed"}), 403
 
 @app.route('/', methods=['GET'])
 def home():

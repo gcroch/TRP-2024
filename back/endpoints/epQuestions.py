@@ -76,6 +76,7 @@ def create_question():
     return jsonify({"message": "Pregunta creada", "question_id": str(res.inserted_id)}), 201
 
 @questions_bp.route('/questions', methods=['GET'])
+##@jwt_required()
 @cross_origin()
 def get_questions():
     query = {}
@@ -94,6 +95,7 @@ def get_questions():
     return jsonify(out), 200
 
 @questions_bp.route('/questions/<question_id>', methods=['GET'])
+##@jwt_required()
 @cross_origin()
 def get_question(question_id):
     try:
@@ -164,7 +166,7 @@ def delete_question(question_id):
 
 @questions_bp.route('/questions/<id>/image', methods=['POST','OPTIONS'])
 @cross_origin(headers=['Content-Type','Authorization'])
-@jwt_required()
+##@jwt_required()
 def upload_question_image(id):
     # Atiende preflight OPTIONS 
     if request.method == 'OPTIONS':

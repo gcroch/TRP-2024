@@ -4,10 +4,12 @@
 from flask import Blueprint, request, jsonify
 from bson import ObjectId
 from extensions import mongo
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 units_bp = Blueprint('units', __name__)
 
 @units_bp.route('/units', methods=['GET'])
+##@jwt_required()
 def get_units():
     units_cursor = mongo.db.units.find()
     units_list = []
