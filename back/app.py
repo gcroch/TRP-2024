@@ -55,16 +55,15 @@ def restrict_origin():
         "http://170.210.103.76"
     ]
     origin = request.headers.get("Origin")
-    host = request.headers.get("Host")
+    referer = request.headers.get("Referer")
 
-    # Bloquear accesos directos sin Origin a rutas sensibles
+    # Rutas sensibles
     if request.path in ["/questions", "/answers", "/users"]:
         if not origin:
-            # Si no hay Origin pero el Host coincide con el servidor → permitir
-            if host not in ["170.210.103.76", "localhost:5000"]:
+            # Permitir si el referer viene de tu propia web
+            if not referer or not any(ref in referer for ref in allowed):
                 return jsonify({"error": "Acceso directo no permitido"}), 403
 
-    # Si hay Origin pero no está permitido
     if origin and origin not in allowed:
         return jsonify({"error": "Origin not allowed"}), 403
 
