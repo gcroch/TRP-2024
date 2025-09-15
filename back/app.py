@@ -49,16 +49,25 @@ app.register_blueprint(report_bp)
 # 🔒 Middleware para restringir orígenes no permitidos
 @app.before_request
 def restrict_origin():
-    allowed = ["http://localhost:3000", "https://trp.unlu.edu.ar", "http://170.210.103.76"]
+    allowed = [
+        "http://localhost:3000",
+        "https://trp.unlu.edu.ar",
+        "http://170.210.103.76"
+    ]
     origin = request.headers.get("Origin")
+    host = request.headers.get("Host")
 
     # Bloquear accesos directos sin Origin a rutas sensibles
     if request.path in ["/questions", "/answers", "/users"]:
-        if not origin:  # acceso directo desde navegador
-            return jsonify({"error": "Acceso directo no permitido"}), 403
+        if not origin:
+            # Si no hay Origin pero el Host coincide con el servidor → permitir
+            if host not in ["170.210.103.76", "localhost:5000"]:
+                return jsonify({"error": "Acceso directo no permitido"}), 403
 
+    # Si hay Origin pero no está permitido
     if origin and origin not in allowed:
         return jsonify({"error": "Origin not allowed"}), 403
+
 
 @app.route('/', methods=['GET'])
 def home():
